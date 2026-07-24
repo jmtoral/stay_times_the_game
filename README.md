@@ -1,4 +1,4 @@
-# Stay Time — Simulador de jornada de reparto (KOF)
+# Stay Time — Simulador de jornada de reparto
 
 Serious game para personal de operaciones de reparto. El jugador elige la flota,
 descarga con precisión y trata de cerrar la jornada de 8 horas (07:00 → 15:00)

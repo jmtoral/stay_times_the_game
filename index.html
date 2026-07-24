@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Stay Time — Simulador de jornada de reparto (KOF)</title>
+
+<!-- Three.js: versión FIJA vía importmap ES module. En r160 three.module.js es
+     autocontenido (no hay three.core.js). URL verificada 200 antes de fijarla. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+
+<style>
+  :root{
+    /* Tema/branding con la paleta de rojos KOF (red-50 … red-950).
+       Los colores FUNCIONALES (categorías del reloj + zonas del minijuego)
+       se mantienen distinguibles por legibilidad; sólo 'extra' y 'rojo' usan
+       el rojo de la paleta. */
+    --red-50:#ffe5e5; --red-100:#ffcccc; --red-200:#ff9999; --red-300:#ff6666;
+    --red-400:#ff3333; --red-500:#ff0000; --red-600:#cc0000; --red-700:#990000;
+    --red-800:#660000; --red-900:#330000; --red-950:#240000;
+
+    /* Tema CLARO: superficies claras con leve tinte cálido, texto oscuro, rojo
+       KOF sólo como acento/branding para que contraste (no inunde la pantalla). */
+    --bg:#f2ebeb; --panel:#ffffff; --panel2:#f7efef; --line:#e2d0d0;
+    --txt:#2a1414; --muted:#8a6a6a; --accent:var(--red-600);
+    /* categorías del reloj de jornada (distintas entre sí, oscuras para leerse en claro) */
+    --c-traslado:#d97706; --c-stay:#0d9488; --c-retorno:#7c3aed;
+    --c-extra:var(--red-600); --c-cedis:#caa6a6;
+    --verde:#16a34a; --amarillo:#ca8a04; --rojo:#dc2626;
+    --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; height:100%; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overflow:hidden; touch-action:manipulation; }
+  #canvas3d{ position:fixed; inset:0; width:100%; height:100%; display:block; z-index:0; }
+
+  /* El HUD deja pasar el puntero salvo en elementos interactivos explícitos */
+  #hudRoot{ position:fixed; inset:0; z-index:10; pointer-events:none; }
+  .screen{ position:absolute; inset:0; display:none; flex-direction:column;
+    pointer-events:auto; }
+  .screen.on{ display:flex; }
+  .interactivo{ pointer-events:auto; }
+
+  h1,h2,h3{ margin:0 0 .4em; font-weight:700; letter-spacing:.2px; }
+  .muted{ color:var(--muted); }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; }
+  button{ font:inherit; color:var(--txt); background:var(--panel2);
+    border:1px solid var(--line); border-radius:10px; padding:12px 18px;
+    cursor:pointer; min-height:48px; }
+  button.primary{ background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+  button:active{ transform:translateY(1px); }
+  table{ border-collapse:collapse; width:100%; font-size:13px; }
+  th,td{ border:1px solid var(--line); padding:6px 8px; text-align:right; }
+  th:first-child,td:first-child{ text-align:left; }
+  th{ background:var(--panel2); color:var(--muted); font-weight:600; }
+  .scroll{ overflow:auto; -webkit-overflow-scrolling:touch; }
+
+  /* ---------- MENU ---------- */
+  #menu{ align-items:center; justify-content:center; text-align:center; padding:24px;
+    background:radial-gradient(1200px 600px at 50% -10%, #ffd9d9 0%, var(--bg) 60%); }
+  #menu .card{ max-width:560px; }
+  #menu h1{ font-size:28px; }
+  .obj{ text-align:left; margin:14px 0; color:var(--muted); font-size:14px; line-height:1.5; }
+
+  /* ---------- SELECCION ---------- */
+  #seleccion{ padding:18px; overflow:auto; }
+  .infoRuta{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+  .chip{ background:var(--panel2); border:1px solid var(--line); border-radius:999px;
+    padding:6px 12px; font-size:13px; }
+  .camiones{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:640px){ .camiones{ grid-template-columns:1fr; } }
+  .camion h3{ font-size:18px; }
+  .camion ul{ margin:8px 0 14px; padding-left:18px; color:var(--muted); font-size:13px; line-height:1.6; }
+  .warnTxt{ color:var(--warn); }
+
+  /* ---------- HUD juego ---------- */
+  #hud{ pointer-events:none; }
+  #barraTop{ position:absolute; top:0; left:0; right:0; padding:10px 12px;
+    background:linear-gradient(#f2ebebf2,#f2ebebcc,transparent); }
+  .relojFila{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
+  #horaDia{ font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; }
+  #estadoReloj{ font-size:12px; color:var(--muted); }
+  #jornadaBar{ position:relative; height:20px; background:#ece0e0; border:1px solid var(--line);
+    border-radius:6px; overflow:hidden; display:flex; }
+  #jornadaBar .seg{ height:100%; }
+  #linea15{ position:absolute; top:-3px; bottom:-3px; width:2px; background:rgba(0,0,0,.4); }
+  #linea15 .lbl{ position:absolute; top:-14px; left:-14px; font-size:9px; color:#fff; }
+  #marcaAhora{ position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--accent); }
+  .leyenda{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; font-size:10px; color:var(--muted); }
+  .leyenda i{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:middle; }
+
+  #panelParada{ position:absolute; top:96px; left:12px; width:min(300px,54vw);
+    background:#ffffffef; box-shadow:0 4px 16px #0000001a; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; }
+  #panelParada h3{ font-size:14px; }
+  .kv{ display:flex; justify-content:space-between; gap:8px; margin:3px 0; }
+  .kv b{ font-variant-numeric:tabular-nums; }
+  #etqDificultad{ margin-top:8px; font-size:11px; color:var(--warn); min-height:14px; }
+
+  /* toasts / avisos */
+  #avisos{ position:absolute; top:96px; right:12px; width:min(300px,54vw);
+    display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
+  .toast{ background:#ffffff; box-shadow:0 4px 16px #0000001f; border:1px solid var(--line); border-radius:10px; padding:8px 12px;
+    font-size:12px; color:var(--txt); max-width:100%; }
+  .toast.bad{ background:#ffe9e9; border-color:var(--red-400); color:#7a0000; }
+  .toast.ok{ background:#dcfce7; border-color:#16a34a; color:#14532d; }
+
+  /* resumen desviación 2s */
+  #resumenDesv{ position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+    background:#ffffffee; box-shadow:0 8px 30px #0000002a; border:1px solid var(--line); border-radius:14px; padding:18px 22px;
+    text-align:center; display:none; }
+  #resumenDesv.on{ display:block; }
+  #resumenDesv .big{ font-size:22px; font-weight:800; }
+
+  /* ---------- MINIJUEGO (anclado abajo del todo) ----------
+     Fondo TRANSPARENTE: no tapa ni lava el camión, para que se aprecie cómo se
+     descargan las cajas mientras juegas. La barra/botón traen su propio fondo. */
+  #minijuego{ position:absolute; left:0; right:0; bottom:0;
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+    justify-content:flex-end; background:none; }
+  #mjInfo{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  #mjContador{ font-size:15px; font-weight:700; text-shadow:0 1px 3px #f2ebeb,0 0 8px #f2ebeb; }
+  #mjZonaTxt{ font-size:12px; color:var(--muted); text-shadow:0 1px 3px #f2ebeb,0 0 8px #f2ebeb; }
+  #mjBarra{ position:relative; height:52px; border-radius:8px; overflow:hidden;
+    border:1px solid var(--line); box-shadow:0 4px 16px #0000002e; }
+  #mjAguja{ position:absolute; top:-3px; bottom:-3px; width:4px; background:#fff;
+    box-shadow:0 0 0 1.5px #0009, 0 0 6px #0006; border-radius:2px; }
+  #mjFeedback{ text-align:center; font-size:20px; font-weight:800; min-height:26px; margin-top:4px;
+    text-shadow:0 1px 3px #f2ebeb,0 0 8px #f2ebeb; }
+  #mjControles{ display:flex; gap:10px; margin-top:6px; align-items:center; }
+  #btnDescargar{ flex:1; min-height:64px; font-size:17px; font-weight:800;
+    box-shadow:0 4px 16px #cc000040; }
+  #mjHint{ font-size:11px; color:var(--muted); text-shadow:0 1px 2px #f2ebeb; }
+
+  /* ---------- RESULTADOS ---------- */
+  #resultados{ padding:16px; overflow:auto; }
+  #resultados .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:720px){ #resultados .grid2{ grid-template-columns:1fr; } }
+  .cierreBig{ font-size:34px; font-weight:800; }
+  .estrellas{ font-size:26px; letter-spacing:2px; }
+  .stack{ display:flex; height:26px; border-radius:6px; overflow:hidden; border:1px solid var(--line); margin:8px 0; }
+  .stack .s{ height:100%; }
+  .pos{ color:var(--ok); } .neg{ color:var(--bad); } .zero{ color:var(--muted); }
+  .consejo{ border-left:4px solid var(--accent); padding-left:12px; }
+  .sub{ font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<canvas id="canvas3d"></canvas>
+
+<div id="hudRoot">
+
+  <!-- ============ MENU ============ -->
+  <div class="screen on" id="menu">
+    <div class="card">
+      <h1>Stay Time</h1>
+      <div class="muted">Simulador de jornada de reparto · Operaciones KOF</div>
+      <div class="obj">
+        <b>Qué vas a decidir y ejecutar:</b><br>
+        1. Elegir la flota para la ruta del día.<br>
+        2. Descargar con precisión (el timing cambia cuánto tardas, no cuánto bajas).<br>
+        3. Cerrar la jornada dentro del presupuesto de 8 horas (07:00 → 15:00).<br><br>
+        El Stay Time es costo fijo de estacionamiento + atención al cliente (que la
+        habilidad NO acelera) + descarga variable. La decisión de flota puede condenar
+        la jornada antes de bajar la primera caja.
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:14px; flex-wrap:wrap">
+        <label class="muted" for="selRuta">Ruta:</label>
+        <select id="selRuta" class="interactivo"
+          style="font:inherit; color:var(--txt); background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-height:44px"></select>
+      </div>
+      <div class="sub" id="selRutaDesc" style="margin-bottom:14px">&nbsp;</div>
+      <button class="primary interactivo" id="btnEmpezar">Empezar jornada</button>
+    </div>
+  </div>
+
+  <!-- ============ SELECCION CAMION ============ -->
+  <div class="screen" id="seleccion">
+    <h2>Fase 1 · Selección de camión</h2>
+    <div class="muted" style="margin-bottom:10px">Decide informado: estos son los datos de la ruta de hoy.</div>
+    <div class="infoRuta" id="infoRuta"></div>
+    <div class="card" id="listaParadas" style="margin:0 0 14px;padding:12px"></div>
+    <div class="camiones">
+      <div class="card camion" id="cardChico"></div>
+      <div class="card camion" id="cardGrande"></div>
+    </div>
+  </div>
+
+  <!-- ============ HUD DURANTE EL JUEGO ============ -->
+  <div class="screen" id="hud">
+    <div id="barraTop">
+      <div class="relojFila">
+        <div id="horaDia">07:00</div>
+        <div id="estadoReloj">preparando ruta…</div>
+      </div>
+      <div id="jornadaBar">
+        <div id="linea15"><span class="lbl">15:00</span></div>
+        <div id="marcaAhora"></div>
+      </div>
+      <div class="leyenda">
+        <span><i style="background:var(--c-cedis)"></i>CEDIS</span>
+        <span><i style="background:var(--c-traslado)"></i>Traslado</span>
+        <span><i style="background:var(--c-stay)"></i>Stay Time</span>
+        <span><i style="background:var(--c-retorno)"></i>Retorno CEDIS</span>
+        <span><i style="background:var(--c-extra)"></i>Tiempo extra</span>
+      </div>
+    </div>
+
+    <div id="panelParada">
+      <h3 id="ppTitulo">Parada 1 de 7</h3>
+      <div class="kv"><span class="muted">Llegada planeada</span><b id="ppPlanLleg">—</b></div>
+      <div class="kv"><span class="muted">Llegada real</span><b id="ppRealLleg">—</b></div>
+      <div class="kv"><span class="muted">Atraso acumulado</span><b id="ppAtraso">—</b></div>
+      <hr style="border-color:var(--line)">
+      <div class="kv"><span class="muted">Stay Time planeado</span><b id="ppStayPlan">—</b></div>
+      <div class="kv"><span class="muted">Stay Time real (vivo)</span><b id="ppStayReal">—</b></div>
+      <div id="etqDificultad"></div>
+    </div>
+
+    <div id="avisos"></div>
+
+    <div id="resumenDesv">
+      <div class="muted">Saliendo de la parada</div>
+      <div class="big" id="rdTitulo">—</div>
+      <div id="rdDetalle" class="sub"></div>
+    </div>
+  </div>
+
+  <!-- ============ MINIJUEGO ============ -->
+  <div class="screen" id="minijuego">
+    <div id="mjInfo">
+      <div id="mjContador">Maniobra 1 de 4</div>
+      <div id="mjZonaTxt">Detén la aguja en la zona verde</div>
+    </div>
+    <div id="mjBarra"><div id="mjAguja"></div></div>
+    <div id="mjFeedback">&nbsp;</div>
+    <div id="mjControles">
+      <button class="primary interactivo" id="btnDescargar">DESCARGAR ▸ (Espacio)</button>
+    </div>
+    <div id="mjHint">Un solo toque por maniobra. Machacar no acelera nada: sólo cuenta la precisión.</div>
+  </div>
+
+  <!-- ============ RESULTADOS ============ -->
+  <div class="screen" id="resultados"></div>
+
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+/* =====================================================================
+   CONFIG — TODAS las constantes tuneables viven aquí. Ningún número mágico
+   fuera de este objeto (los únicos literales en el código son índices y 0/1).
+   ===================================================================== */
+const CONFIG = {
+  seed: 12345,                       // semilla del RNG (demos reproducibles)
+
+  jornada: {
+    inicioMin: 7*60,                 // 07:00 = 420
+    presupuestoMin: 480,             // 8 h; excederlo cuesta
+    limiteRojoMin: 15*60,            // 15:00 = 900 → zona roja, empieza tiempo extra
+    corteDuroMin: 17*60,             // 17:00 = 1020 → ruta truncada
+    spanBarraMin: 10*60              // la barra representa 07:00→17:00 (600 min)
+  },
+
+  // Bloques fijos que NO son Stay Time (van en su propia categoría)
+  bloques: {
+    cargaCEDIS: 35,
+    liquidacionFinal: 25,
+    trasladoPorTramo: 17,            // tramos: CEDIS→P1, entre paradas, Pn→CEDIS
+    atencionCliente: 12,            // Stay Time que la habilidad NO acelera
+    // Bloque de retorno a CEDIS (25 traslado + 15 recarga/andén + 25 regreso).
+    // ADICIONAL al traslado normal. No es Stay Time. Se dispara cuando la carga
+    // del camión no alcanza para la siguiente parada.
+    retornoCEDIS: 65
+  },
+
+  cajasPorManiobra: 20,             // maniobras por parada = ceil(cajas/20)
+
+  // Catálogo de rutas (editable). La CANÓNICA es la de referencia y produce los
+  // números del spec (468/496/465). Las demás dan variedad; el retorno del chico
+  // se dispara dinámicamente según su capacidad (280) vs las cajas de la ruta.
+  // canal: 'tradicional' = tiendita (Canal Tradicional); 'moderno' = supermercado
+  // (Canal Moderno). `nombres` y `canal` son paralelos a `cajas`.
+  rutas: {
+    canonica: {
+      nombre:'Estándar (demo · 7 paradas, 500 cajas)',
+      cajas:        [80, 60, 100, 40, 90, 70, 60],   // suma 500
+      zonaEstrecha: [false, true, false, false, true, false, false], // P2 y P5
+      ventanaCierre:[null, null, "10:15", null, "12:30", null, "14:30"], // P3, P5, P7
+      nombres: ["Abarrotes Doña Mari","Súper La Comercial","Tienda El Ahorro","Minisúper San José","Supermercado Del Valle","Abarrotes El Sol","Súper Express Reforma"],
+      canal:   ["tradicional","moderno","tradicional","tradicional","moderno","tradicional","moderno"]
+    },
+    express: {
+      nombre:'Express centro (5 paradas, ventanas apretadas)',
+      cajas:        [70, 50, 60, 90, 60],            // suma 330
+      zonaEstrecha: [true, false, true, false, true],
+      ventanaCierre:[null, "09:40", null, "11:30", "12:45"],
+      nombres: ["Tiendita La Esquina","Súper Centro","Abarrotes Lupita","Supermercado Plaza","Súper 24 Reforma"],
+      canal:   ["tradicional","moderno","tradicional","moderno","moderno"]
+    },
+    pesada: {
+      nombre:'Ruta pesada (10 paradas, 700 cajas)',
+      cajas:        [80, 60, 100, 40, 90, 70, 60, 50, 80, 70], // suma 700
+      zonaEstrecha: [false, false, false, false, false, false, false, false, true, false],
+      ventanaCierre:[null, null, "10:00", null, null, "12:30", null, null, "14:00", null],
+      nombres: ["Abarrotes Don Beto","Súper Mega","Tienda La Fe","Minisúper Aztlán","Supermercado Norte","Abarrotes María","Súper Ahorro","Tiendita El Puente","Hiper Central","Abarrotes La Loma"],
+      canal:   ["tradicional","moderno","tradicional","tradicional","moderno","tradicional","moderno","tradicional","moderno","tradicional"]
+    },
+    ligera: {
+      nombre:'Ruta ligera (3 paradas, 200 cajas)',
+      cajas:        [80, 60, 60],                    // suma 200
+      zonaEstrecha: [true, false, true],
+      ventanaCierre:[null, null, null],
+      nombres: ["Abarrotes Chila","Súper Barrio","Tiendita Rosa"],
+      canal:   ["tradicional","moderno","tradicional"]
+    }
+  },
+  rutaDefault:'canonica',
+
+  // Camiones. El plan del planeador asume implícitamente el grande (estac. 6).
+  // El retorno a CEDIS ya no es fijo por camión: se calcula según capacidad.
+  camiones: {
+    chico: {
+      id:'chico', nombre:'Camión chico', capacidad:280,
+      estacionamiento:3, penalizacionEstrecha:0
+    },
+    grande: {
+      id:'grande', nombre:'Camión grande', capacidad:550,
+      estacionamiento:6, penalizacionEstrecha:8    // +8 SOLO en zona estrecha
+    }
+  },
+
+  // Minijuego de descarga (precisión, no velocidad)
+  mj: {
+    cicloBase: 1.6,                 // s por ciclo completo de la aguja (delta-time)
+    zonaVerde: 0.18,                // ancho relativo zona verde base
+    zonaVerdeEstrecha: 0.12,        // en paradas con zonaEstrecha
+    zonaVerdeUltima: 0.22,          // última maniobra de cada parada (el remate)
+    zonaAmarilla: 0.16,             // a CADA lado de la verde
+    aceleracionPorManiobra: 0.08,   // +8% desde la 3ª maniobra en paradas de ≥5
+    umbralManiobrasAcelera: 5,      // “5 o más maniobras”
+    tVerde: 5.0, tAmarillo: 6.5, tRojo: 8.5, // min por maniobra según acierto
+    resolverMs: 700                 // input bloqueado mientras se resuelve la maniobra
+  },
+
+  // Plan teórico del planeador (documento fijo, calculado UNA vez)
+  plan: { estacionamientoEstandar: 6, minPorManiobra: 5.5 },
+
+  // Evento aleatorio
+  evento: { probabilidad: 0.25, extraMin: 5 },
+
+  // Ventanas de recepción
+  ventana: { gestionRechazoMin: 8 },
+
+  // Costos (placeholders a calibrar por el usuario)
+  costos: {
+    costoMinutoExtra: 4.5,
+    costoRechazo: 850,
+    costoCajaNoEntregada: 12,
+    costoRetornoCEDIS: 300
+  },
+
+  // Calificación en estrellas sobre el costo total del turno (umbrales explícitos)
+  estrellas: [
+    { maxCosto: 50,   estrellas: 5 },
+    { maxCosto: 250,  estrellas: 4 },
+    { maxCosto: 600,  estrellas: 3 },
+    { maxCosto: 1200, estrellas: 2 },
+    { maxCosto: Infinity, estrellas: 1 }
+  ],
+
+  ui: { trasladoAnimMs: 2000, resumenDesvMs: 2000 }
+};
+
+/* Las rutas alternas ya son seleccionables desde el menú (CONFIG.rutas).
+   Para añadir una nueva, basta con agregarla a CONFIG.rutas: aparecerá sola en
+   el selector y toda la lógica (maniobras, ventanas, retornos) se adapta. */
+
+/* =====================================================================
+   RNG con semilla (mulberry32) — para eventos reproducibles por semilla.
+   ===================================================================== */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ---- Ruta activa (mutable): se selecciona en el menú. `num` y `ventanaMin`
+   se recalculan cada vez que cambia la ruta. ---- */
+let RUTA = CONFIG.rutas[CONFIG.rutaDefault];
+let num = [];         // maniobras por parada = ceil(cajas/20)
+let ventanaMin = [];  // ventanas de cierre en minutos desde medianoche
+function aplicarRuta(key){
+  RUTA = CONFIG.rutas[key];
+  num = RUTA.cajas.map(c => Math.ceil(c / CONFIG.cajasPorManiobra));
+  ventanaMin = RUTA.ventanaCierre.map(v => v ? (parseInt(v.slice(0,2))*60 + parseInt(v.slice(3))) : null);
+}
+aplicarRuta(CONFIG.rutaDefault);
+
+// Índices de parada TRAS los cuales el camión debe volver a CEDIS a recargar,
+// porque su carga restante no alcanza para la siguiente parada. Devuelve [] si
+// la capacidad cubre toda la ruta de una sola vuelta.
+function calcularRetornos(camion, cajas){
+  const total = cajas.reduce((a,b)=>a+b, 0);
+  if (camion.capacidad >= total) return [];
+  const idx = [];
+  let carga = camion.capacidad;
+  for (let i=0;i<cajas.length;i++){
+    carga -= cajas[i];
+    if (i < cajas.length-1 && carga < cajas[i+1]){ idx.push(i); carga = camion.capacidad; }
+  }
+  return idx;
+}
+
+/* ---- Helpers de tiempo (minutos desde medianoche → "HH:MM") ---- */
+function hhmm(min){
+  min = Math.round(min);
+  const h = Math.floor(min/60), m = ((min%60)+60)%60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+function firma(min){ const s = Math.round(min); return (s>0?'+':'') + s; }
+
+/* ---- Helpers de canal de venta (tiendita/supermercado) ---- */
+function nombreParada(i){ return (RUTA.nombres && RUTA.nombres[i]) || `Parada ${i+1}`; }
+function canalDe(i){ return (RUTA.canal && RUTA.canal[i]) || 'tradicional'; }
+function canalLabel(i){ return canalDe(i) === 'moderno' ? 'Canal Moderno' : 'Canal Tradicional'; }
+// Etiqueta HTML con color por canal (Moderno = acento; Tradicional = neutro).
+function canalBadge(i){
+  const moderno = canalDe(i) === 'moderno';
+  const bg = moderno ? 'var(--accent)' : '#8a6a6a';
+  return `<span style="display:inline-block;font-size:10px;font-weight:700;color:#fff;`+
+    `background:${bg};border-radius:999px;padding:2px 8px;vertical-align:middle">${canalLabel(i)}</span>`;
+}
+
+/* =====================================================================
+   MODELO DE CÁLCULO — impleméntalo tal cual (SPEC).
+
+   NÚMEROS DE REFERENCIA (juego perfecto = toda maniobra en zona verde = 5.0 min),
+   verificados contra este mismo código en motor JS:
+     · Camión GRANDE perfecto: 468 min, cierra 14:48, 0 min de tiempo extra.
+     · Camión CHICO  perfecto: 496 min, cierra 15:16, 16 min de tiempo extra.
+       → La ruta por defecto CONDENA al camión chico aunque el jugador sea impecable.
+     · PLAN del planeador:     465 min, cierra 14:45 (asume grande, ignora estrechas).
+       → Ni el grande perfecto lo alcanza: queda 3 min por detrás.
+     · Camión chico perfecto llega a la parada 5 a las 12:15 (ventana 12:30):
+       15 min de margen; cualquier error previo provoca rechazo.
+   ===================================================================== */
+
+// Stay Time de una parada. Si hay rechazo por ventana, se colapsa a
+// estacionamiento + gestión (las cajas no se descargan).
+function stayTimeParada(camion, i, maniTimes, eventoActivo, rechazo){
+  if (rechazo) return camion.estacionamiento + CONFIG.ventana.gestionRechazoMin;
+  let t = camion.estacionamiento;
+  if (RUTA.zonaEstrecha[i]) t += camion.penalizacionEstrecha;
+  t += CONFIG.bloques.atencionCliente;                 // 12 min, no acelerable
+  t += maniTimes.reduce((a,b)=>a+b, 0);                // descarga variable
+  if (eventoActivo) t += CONFIG.evento.extraMin;       // +5 min
+  return t;
+}
+
+// Desglose por concepto (para la pantalla de resultados)
+function desgloseParada(camion, i, maniTimes, eventoActivo, rechazo){
+  if (rechazo){
+    return { estac:camion.estacionamiento, penal:0, atencion:0, descarga:0, evento:0,
+             gestion:CONFIG.ventana.gestionRechazoMin };
+  }
+  return {
+    estac: camion.estacionamiento,
+    penal: RUTA.zonaEstrecha[i] ? camion.penalizacionEstrecha : 0,
+    atencion: CONFIG.bloques.atencionCliente,
+    descarga: maniTimes.reduce((a,b)=>a+b,0),
+    evento: eventoActivo ? CONFIG.evento.extraMin : 0,
+    gestion: 0
+  };
+}
+
+// PLAN teórico del planeador. Se calcula UNA sola vez, con parámetros estándar:
+// asume implícitamente el camión grande (estac. 6) e ignora zonas estrechas.
+function calcularPlan(){
+  const B = CONFIG.bloques, J = CONFIG.jornada, P = CONFIG.plan;
+  let reloj = J.inicioMin + B.cargaCEDIS;
+  const llegada = [], stay = [];
+  for (let i=0;i<num.length;i++){
+    reloj += B.trasladoPorTramo;
+    llegada.push(reloj);
+    const st = B.atencionCliente + P.estacionamientoEstandar + num[i]*P.minPorManiobra;
+    stay.push(st);
+    reloj += st;
+  }
+  reloj += B.trasladoPorTramo;      // P7 → CEDIS (8º tramo)
+  reloj += B.liquidacionFinal;
+  return { llegada, stay, total: reloj - J.inicioMin, cierre: reloj };
+}
+
+// Simulación completa de la jornada dada la ejecución (maniobras) y los eventos.
+// Fuente de verdad para números finales y contrafactual. Determinista.
+function simularJornada(camion, maniPorParada, eventos){
+  const B = CONFIG.bloques, J = CONFIG.jornada;
+  const retornos = calcularRetornos(camion, RUTA.cajas);  // índices tras los que recarga
+  let reloj = J.inicioMin + B.cargaCEDIS;
+  const paradas = [];
+  let truncado = false;
+
+  for (let i=0;i<num.length;i++){
+    reloj += B.trasladoPorTramo;
+    const llegada = reloj;
+
+    // Corte duro a las 17:00: la ruta se trunca, restantes NO ENTREGADAS.
+    if (llegada >= J.corteDuroMin) truncado = true;
+    if (truncado){
+      paradas.push({ i, llegada, noEntregada:true, rechazo:false, stay:0,
+        desglose:desgloseParada(camion,i,[],false,false), maniTimes:[] });
+      continue;
+    }
+
+    const rechazo = ventanaMin[i] != null && llegada > ventanaMin[i];
+    const maniTimes = maniPorParada[i] || [];
+    const stay = stayTimeParada(camion, i, maniTimes, eventos[i], rechazo);
+    const desg = desgloseParada(camion, i, maniTimes, eventos[i], rechazo);
+    reloj += stay;
+    paradas.push({ i, llegada, noEntregada:false, rechazo, stay, desglose:desg, maniTimes });
+
+    if (retornos.includes(i)) reloj += B.retornoCEDIS;
+  }
+
+  if (!truncado){
+    reloj += B.trasladoPorTramo;        // Pn → CEDIS
+    reloj += B.liquidacionFinal;
+  }
+  const total = reloj - J.inicioMin;
+  return {
+    paradas, total, cierre: reloj,
+    tiempoExtra: Math.max(0, total - J.presupuestoMin),
+    retornos: retornos.length,
+    truncado
+  };
+}
+
+// Costo total del turno, desglosado por concepto.
+function calcularCostos(camion, sim){
+  const C = CONFIG.costos;
+  let rechazos=0, cajasPerdidas=0;
+  sim.paradas.forEach(p=>{
+    if (p.rechazo || p.noEntregada){
+      cajasPerdidas += RUTA.cajas[p.i];
+      if (p.rechazo) rechazos++;
+    }
+  });
+  const extra = sim.tiempoExtra * C.costoMinutoExtra;
+  const cRechazo = rechazos * C.costoRechazo;
+  const cCajas = cajasPerdidas * C.costoCajaNoEntregada;
+  const cRetorno = sim.retornos * C.costoRetornoCEDIS;
+  const total = extra + cRechazo + cCajas + cRetorno;
+  return { extra, cRechazo, cCajas, cRetorno, total, rechazos, cajasPerdidas };
+}
+
+function estrellasPara(costoTotal){
+  for (const u of CONFIG.estrellas) if (costoTotal <= u.maxCosto) return u.estrellas;
+  return 1;
+}
+
+/* =====================================================================
+   ESTADO GLOBAL DEL JUEGO
+   ===================================================================== */
+const G = {
+  estado:'MENU',
+  rng:null,
+  rutaKey: CONFIG.rutaDefault,
+  seedActual: CONFIG.seed,
+  camion:null, otroCamion:null,
+  retornos:[],                // índices de parada tras los que el camión recarga
+  plan:null,
+  eventos:[],                 // bool por parada (pre-rodados con RNG)
+  maniobras:[],               // tiempos reales por parada [[..],[..],...]
+  paradaIdx:0,
+  reloj: CONFIG.jornada.inicioMin,
+  elapsed:0,                  // minutos transcurridos desde inicio (para la barra)
+  segmentos:[],               // segmentos de la barra {cat, min}
+  llegadaReal:[],             // hora real de llegada por parada
+  rechazoReal:[],             // bool por parada
+  // runtime minijuego
+  mj:null
+};
+
+/* =====================================================================
+   THREE.JS — escena procedural, cámara isométrica fija (< 5000 triángulos).
+   ===================================================================== */
+const canvas = document.getElementById('canvas3d');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // limitado a 2
+// Paleta de rojos KOF para el 3D (misma que el CSS).
+const RED = { 50:0xffe5e5,100:0xffcccc,200:0xff9999,300:0xff6666,400:0xff3333,
+  500:0xff0000,600:0xcc0000,700:0x990000,800:0x660000,900:0x330000,950:0x240000 };
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xefe7e7);   // fondo claro cálido, para contraste
+scene.fog = new THREE.Fog(0xefe7e7, 24, 52);
+
+let camera;
+function setupCamera(){
+  const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+  const d = 9;
+  camera = new THREE.OrthographicCamera(-d*aspect, d*aspect, d, -d, 0.1, 100);
+  camera.position.set(14, 13, 14);         // vista isométrica fija (sin órbita)
+  camera.lookAt(0, 0.5, 0);
+}
+setupCamera();
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd6c6c6, 1.05));
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+const sun = new THREE.DirectionalLight(0xffffff, 1.15);
+sun.position.set(10, 16, 6);
+scene.add(sun);
+
+// Suelo y carretera (tonos claros)
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(80, 80),
+  new THREE.MeshStandardMaterial({ color:0xe0d6d6, roughness:1 }));
+ground.rotation.x = -Math.PI/2;
+scene.add(ground);
+const road = new THREE.Mesh(
+  new THREE.BoxGeometry(80, 0.05, 3),
+  new THREE.MeshStandardMaterial({ color:0xbfa9a9 }));
+road.position.set(0, 0.03, 3.2);
+scene.add(road);
+
+// Edificios de fondo (procedurales, gris cálido claro)
+function edificio(x,z,w,h,d,color){
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
+    new THREE.MeshStandardMaterial({ color, roughness:.9 }));
+  m.position.set(x, h/2, z);
+  scene.add(m); return m;
+}
+for (let i=0;i<11;i++) edificio(-14 + i*3, -4.2, 2.2, 1.6+((i*7)%3)*0.8, 2.2, 0xcdbcbc);
+
+// Camión rojo (grupo procedural) — contrasta sobre el fondo claro
+const truck = new THREE.Group();
+const cabina = new THREE.Mesh(new THREE.BoxGeometry(1.4,1.3,1.8),
+  new THREE.MeshStandardMaterial({ color:RED[700] }));
+cabina.position.set(1.5, 0.85, 0);
+const caja = new THREE.Mesh(new THREE.BoxGeometry(3.2,1.8,2),
+  new THREE.MeshStandardMaterial({ color:RED[500] }));
+caja.position.set(-0.7, 1.1, 0);
+truck.add(cabina, caja);
+for (const [x,z] of [[1.4,1],[1.4,-1],[-1.4,1],[-1.4,-1]]){
+  const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.35,10),
+    new THREE.MeshStandardMaterial({ color:0x2a2020 }));
+  w.rotation.x = Math.PI/2; w.position.set(x, 0.4, z);
+  truck.add(w);
+}
+const STOP_X = 0, OFF_DER = 22, OFF_IZQ = -22;  // posiciones para la animación de traslado
+truck.position.set(STOP_X, 0, 2);
+scene.add(truck);
+
+// Edificio de DESTINO: cambia de forma, color y posición en cada parada, para que
+// se sienta que el camión llega a un LUGAR DISTINTO. Un solo mesh reutilizado.
+const destino = new THREE.Mesh(new THREE.BoxGeometry(2.4,3,2.4),
+  new THREE.MeshStandardMaterial({ color:RED[600], roughness:.9 }));
+scene.add(destino);
+const marquesina = new THREE.Mesh(new THREE.BoxGeometry(2.8,0.15,1.2),
+  new THREE.MeshStandardMaterial({ color:RED[300] }));
+scene.add(marquesina);
+const paletaDestino = [RED[300], RED[400], RED[500], RED[600], RED[700], RED[200], RED[400]];
+function configurarDestino(spec){
+  if (spec.tipo === 'cedis'){
+    destino.geometry.dispose();
+    destino.geometry = new THREE.BoxGeometry(4, 4, 3.2);
+    destino.position.set(2.4, 2, -1.6);
+    destino.material.color.setHex(RED[800]);
+    marquesina.scale.set(1.6, 1, 1.4);
+    marquesina.material.color.setHex(RED[300]);
+    marquesina.position.set(2.4, 4.1, -0.4);
+    cajasGroup.visible = false;
+    return;
+  }
+  const i = spec.i;                          // varía de forma determinista por parada
+  const moderno = spec.canal === 'moderno';  // supermercado = nave ancha; tiendita = local chico
+  const h = moderno ? (3.0 + ((i*37) % 3) * 0.7) : (2.0 + ((i*29) % 2) * 0.6);
+  const w = moderno ? (3.4 + ((i*17) % 2) * 0.8) : (1.8 + ((i*13) % 2) * 0.4);
+  const d = moderno ? 3.0 : 2.2;
+  destino.geometry.dispose();
+  destino.geometry = new THREE.BoxGeometry(w, h, d);
+  destino.position.set(2.6 + (moderno?0.3:0), h/2, -1.4 + ((i*53) % 3) * 0.5);
+  destino.material.color.setHex(paletaDestino[i % paletaDestino.length]);
+  // Marquesina más ancha y clara en Canal Moderno.
+  marquesina.scale.set(moderno ? 1.5 : 0.9, 1, moderno ? 1.4 : 1);
+  marquesina.material.color.setHex(moderno ? RED[300] : RED[600]);
+  marquesina.position.set(2.6 + (moderno?0.3:0), h + 0.1, 0.2);
+  cajasGroup.visible = true;
+}
+
+// Pila de cajas (se reduce por maniobra), junto a la caja del camión
+const cajasGroup = new THREE.Group();
+cajasGroup.position.set(-3.6, 0, 2.4);
+scene.add(cajasGroup);
+function pintarPila(fraccion){
+  cajasGroup.clear();
+  const total = Math.max(0, Math.round(fraccion * 12));
+  const mat = new THREE.MeshStandardMaterial({ color:0xc27f3a, roughness:.85 }); // cartón, visible
+  for (let k=0;k<total;k++){
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.5,0.72), mat);
+    b.position.set((k%2)*0.82, 0.25 + Math.floor(k/2)*0.55, ((k%3)-1)*0.1);
+    cajasGroup.add(b);
+  }
+}
+pintarPila(1);
+configurarDestino({ tipo:'cedis' });
+
+// Bucle de render + reloj de animación (delta-time, se pausa en segundo plano)
+let animClock = 0;      // acumulador de segundos para la aguja (NO avanza si oculto)
+let lastNow = performance.now();
+let trasladoAnim = null; // {t0, dur, onMid, mid}
+function loop(now){
+  requestAnimationFrame(loop);
+  const dt = (now - lastNow) / 1000;
+  lastNow = now;
+  if (!document.hidden) animClock += dt;   // pausa el acumulador en visibilitychange
+
+  // Animación de traslado (delta-time): el camión SALE de pantalla por la derecha,
+  // a mitad se reconfigura el destino (otro lugar) y ENTRA por la izquierda.
+  if (trasladoAnim){
+    const k = Math.min(1, (animClock - trasladoAnim.t0) / trasladoAnim.dur);
+    if (k < 0.5){
+      truck.position.x = STOP_X + (OFF_DER - STOP_X) * (k*2);       // salida
+    } else {
+      if (!trasladoAnim.mid){ trasladoAnim.mid = true; trasladoAnim.onMid && trasladoAnim.onMid(); }
+      truck.position.x = OFF_IZQ + (STOP_X - OFF_IZQ) * ((k-0.5)*2); // llegada al nuevo lugar
+    }
+    truck.position.y = Math.abs(Math.sin(animClock*14)) * 0.05;      // leve bamboleo
+    if (k >= 1){ trasladoAnim = null; truck.position.set(STOP_X, 0, 2); }
+  }
+
+  // Aguja del minijuego (posición por delta-time → igual a 60 y 120 Hz)
+  if (G.mj && G.mj.activo && !G.mj.resolviendo){
+    const ciclo = G.mj.cicloEff;
+    const fase = (animClock % ciclo) / ciclo;           // 0..1
+    const tri = fase < 0.5 ? fase*2 : (1-fase)*2;        // 0..1..0
+    G.mj.pos = tri;
+    aguja.style.left = (tri*100) + '%';
+  }
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(loop);
+
+function resize(){
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  setupCamera();
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Al volver de segundo plano, evita saltos: no arrastres el tiempo oculto.
+document.addEventListener('visibilitychange', ()=>{ lastNow = performance.now(); });
+
+/* =====================================================================
+   MÁQUINA DE ESTADOS: MENU → SELECCION_CAMION → TRASLADO → PARADA →
+   RETORNO_CEDIS → RESULTADOS. Una función por estado.
+   ===================================================================== */
+const pantallas = {
+  MENU:'menu', SELECCION:'seleccion', JUEGO:'hud', RESULTADOS:'resultados'
+};
+function mostrar(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+const $ = id => document.getElementById(id);
+
+// ---------- MENU ----------
+function estadoMenu(){
+  G.estado='MENU';
+  mostrar('menu');
+}
+
+// ---------- SELECCION_CAMION ----------
+function estadoSeleccion(){
+  G.estado='SELECCION';
+  mostrar('seleccion');
+  document.getElementById('hud').classList.remove('on');
+  $('minijuego').classList.remove('on');
+
+  // Info de la ruta ACTIVA (decisión informada, no adivinada)
+  const totalCajas = RUTA.cajas.reduce((a,b)=>a+b,0);
+  const estrechas = RUTA.zonaEstrecha.map((e,i)=> e?`P${i+1}`:null).filter(Boolean);
+  const ventanas = RUTA.ventanaCierre
+    .map((v,i)=> v ? `P${i+1} ${v}` : null).filter(Boolean).join(' · ') || 'ninguna';
+  const nModerno = RUTA.cajas.map((_,i)=>canalDe(i)).filter(c=>c==='moderno').length;
+  const nTradicional = RUTA.cajas.length - nModerno;
+  $('infoRuta').innerHTML =
+    `<span class="chip">🗺️ ${RUTA.nombre}</span>`+
+    `<span class="chip">📦 ${totalCajas} cajas · ${num.reduce((a,b)=>a+b)} maniobras</span>`+
+    `<span class="chip">🛑 ${RUTA.cajas.length} paradas</span>`+
+    `<span class="chip">🏪 ${nTradicional} Canal Tradicional · 🏬 ${nModerno} Canal Moderno</span>`+
+    `<span class="chip">↔️ ${estrechas.length} acceso estrecho${estrechas.length?` (${estrechas.join(', ')})`:''}</span>`+
+    `<span class="chip">⏰ Ventanas: ${ventanas}</span>`;
+
+  // Lista de paradas con nombre y canal (decisión informada)
+  $('listaParadas').innerHTML = RUTA.cajas.map((c,i)=>
+    `<div class="kv"><span>P${i+1} · ${nombreParada(i)} ${canalBadge(i)}</span><b>${c} cajas</b></div>`).join('');
+
+  const chico = CONFIG.camiones.chico, grande = CONFIG.camiones.grande;
+  const retChico = calcularRetornos(chico, RUTA.cajas);
+  const retGrande = calcularRetornos(grande, RUTA.cajas);
+  const descRetorno = (ret) => ret.length
+    ? `<li class="warnTxt">${totalCajas} cajas &gt; capacidad → <b>${ret.length} retorno${ret.length>1?'s':''} a CEDIS</b> (tras ${ret.map(i=>'P'+(i+1)).join(', ')}, +${CONFIG.bloques.retornoCEDIS} min c/u)</li>`
+    : `<li>Cubre la ruta en una sola vuelta (sin retorno)</li>`;
+  $('cardChico').innerHTML =
+    `<h3>${chico.nombre}</h3>`+
+    `<ul>`+
+      `<li>Capacidad <b>${chico.capacidad}</b> cajas</li>`+
+      `<li>Estacionamiento <b>${chico.estacionamiento} min</b> por parada</li>`+
+      `<li>Sin penalización en acceso estrecho</li>`+
+      descRetorno(retChico)+
+    `</ul>`+
+    `<button class="primary interactivo" data-cam="chico">Elegir chico</button>`;
+  $('cardGrande').innerHTML =
+    `<h3>${grande.nombre}</h3>`+
+    `<ul>`+
+      `<li>Capacidad <b>${grande.capacidad}</b> cajas</li>`+
+      `<li>Estacionamiento <b>${grande.estacionamiento} min</b> por parada</li>`+
+      `<li class="warnTxt">+${grande.penalizacionEstrecha} min en cada acceso estrecho${estrechas.length?` (${estrechas.join(', ')})`:''}</li>`+
+      descRetorno(retGrande)+
+    `</ul>`+
+    `<button class="primary interactivo" data-cam="grande">Elegir grande</button>`;
+  document.querySelectorAll('[data-cam]').forEach(b=>{
+    b.onclick = ()=> elegirCamion(b.dataset.cam);
+  });
+}
+
+// Pre-rodar eventos con el RNG sembrado (misma semilla ⇒ mismos eventos,
+// independiente del camión, para que el contrafactual sea justo).
+function prerodarEventos(){
+  const ev = [];
+  for (let i=0;i<num.length;i++) ev.push(G.rng() < CONFIG.evento.probabilidad);
+  // Garantiza al menos uno por partida, forzándolo en el tramo medio (P3–P5).
+  if (!ev.some(Boolean)){
+    const medios = [2,3,4];
+    const idx = medios[Math.floor(G.rng()*medios.length)];
+    ev[idx] = true;
+  }
+  return ev;
+}
+
+function elegirCamion(id){
+  G.camion = CONFIG.camiones[id];
+  G.otroCamion = CONFIG.camiones[id==='chico' ? 'grande' : 'chico'];
+  G.retornos = calcularRetornos(G.camion, RUTA.cajas);
+  // RNG y eventos se fijan con la semilla ACTIVA (estable al repetir ruta).
+  G.rng = mulberry32(G.seedActual);
+  G.eventos = prerodarEventos();
+  G.plan = calcularPlan();
+  iniciarRuta();
+}
+
+// ---------- Arranque de ruta ----------
+function iniciarRuta(){
+  G.estado='JUEGO';
+  G.maniobras = num.map(()=>[]);
+  G.paradaIdx = 0;
+  G.reloj = CONFIG.jornada.inicioMin;
+  G.elapsed = 0;
+  G.segmentos = [];
+  G.llegadaReal = [];
+  G.rechazoReal = [];
+  mostrar('hud');
+  $('avisos').innerHTML = '';
+  pushSeg('cedis', CONFIG.bloques.cargaCEDIS);   // carga en CEDIS (no Stay Time)
+  actualizarReloj();
+  entrarTraslado(0);
+}
+
+/* ---- Barra de jornada: empuja segmentos cronológicos por categoría.
+   Los minutos por encima del presupuesto (480) se pintan como 'extra'. ---- */
+function pushSeg(cat, mins){
+  const L = CONFIG.jornada.presupuestoMin;
+  const start = G.elapsed, end = start + mins;
+  if (start < L && end > L){
+    G.segmentos.push({cat, min: L-start});
+    G.segmentos.push({cat:'extra', min: end-L});
+  } else if (start >= L){
+    G.segmentos.push({cat:'extra', min: mins});
+  } else {
+    G.segmentos.push({cat, min: mins});
+  }
+  G.elapsed = end;
+  G.reloj = CONFIG.jornada.inicioMin + G.elapsed;
+  renderBarra();
+  actualizarReloj();
+}
+
+const colorCat = { cedis:'var(--c-cedis)', traslado:'var(--c-traslado)',
+  stay:'var(--c-stay)', retorno:'var(--c-retorno)', extra:'var(--c-extra)' };
+function renderBarra(){
+  const bar = $('jornadaBar');
+  const span = CONFIG.jornada.spanBarraMin;
+  // limpia segmentos previos (conserva línea 15:00 y marca ahora)
+  [...bar.querySelectorAll('.seg')].forEach(e=>e.remove());
+  const frag = document.createDocumentFragment();
+  G.segmentos.forEach(s=>{
+    const d = document.createElement('div');
+    d.className='seg';
+    d.style.width = (s.min/span*100)+'%';
+    d.style.background = colorCat[s.cat];
+    frag.appendChild(d);
+  });
+  bar.insertBefore(frag, $('linea15'));
+  $('linea15').style.left = (CONFIG.jornada.presupuestoMin/span*100)+'%';
+  $('marcaAhora').style.left = (G.elapsed/span*100)+'%';
+}
+
+function actualizarReloj(){
+  $('horaDia').textContent = hhmm(G.reloj);
+  const extra = Math.max(0, G.elapsed - CONFIG.jornada.presupuestoMin);
+  const enRojo = G.reloj >= CONFIG.jornada.limiteRojoMin;
+  $('horaDia').style.color = enRojo ? 'var(--bad)' : 'var(--txt)';
+  if (extra>0) $('estadoReloj').innerHTML = `<span style="color:var(--bad)">zona roja · +${Math.round(extra)} min extra</span>`;
+}
+
+// ---------- TRASLADO ----------
+function entrarTraslado(i){
+  // El reloj de Stay Time está detenido; el de jornada SÍ corre (avanza 17 min).
+  $('estadoReloj').innerHTML = `🚚 en traslado — <b>Stay Time detenido</b>, la jornada sigue corriendo`;
+  // A mitad de la animación el destino cambia a la parada i (otro lugar distinto).
+  trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000,
+    mid:false, onMid:()=> configurarDestino({ tipo:'parada', i, canal:canalDe(i) }) };
+  setTimeout(()=>{
+    pushSeg('traslado', CONFIG.bloques.trasladoPorTramo);
+    entrarParada(i);
+  }, CONFIG.ui.trasladoAnimMs);
+}
+
+// ---------- PARADA ----------
+function entrarParada(i){
+  G.estado='JUEGO';
+  G.paradaIdx = i;
+  const llegada = G.reloj;
+  G.llegadaReal[i] = llegada;
+  $('estadoReloj').textContent = `parada ${i+1} de ${num.length} · ${nombreParada(i)}`;
+  pintarPila(1);
+
+  // Panel de parada: nombre, canal, plan vs real
+  $('ppTitulo').innerHTML = `Parada ${i+1}/${num.length} · <b>${nombreParada(i)}</b>` +
+    (RUTA.zonaEstrecha[i] ? ' · acceso estrecho' : '') +
+    `<div style="margin-top:4px">${canalBadge(i)}</div>`;
+  $('ppPlanLleg').textContent = hhmm(G.plan.llegada[i]);
+  $('ppRealLleg').textContent = hhmm(llegada);
+  const atraso = llegada - G.plan.llegada[i];
+  $('ppAtraso').innerHTML = `<span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
+  $('ppStayPlan').textContent = Math.round(G.plan.stay[i]) + ' min';
+  $('ppStayReal').textContent = '0 min';
+
+  // ¿Ventana de recepción vencida?
+  const rechazo = ventanaMin[i] != null && llegada > ventanaMin[i];
+  G.rechazoReal[i] = rechazo;
+  if (rechazo){
+    const tarde = Math.round(llegada - ventanaMin[i]);
+    toast(`❌ ${nombreParada(i)} (${canalLabel(i)}): llegaste ${tarde} min tarde por el atraso acumulado. `+
+          `El cliente rechaza, ${RUTA.cajas[i]} cajas quedan como venta perdida.`, 'bad');
+    // Stay = estacionamiento + gestión; no hay minijuego.
+    pushSeg('stay', G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin);
+    $('ppStayReal').textContent = Math.round(G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin)+' min';
+    setTimeout(()=> salirParada(i), 1400);
+    return;
+  }
+
+  // Parte fija del Stay Time (estacionamiento + penalización + atención al cliente)
+  let fijo = G.camion.estacionamiento;
+  if (RUTA.zonaEstrecha[i]) fijo += G.camion.penalizacionEstrecha;
+  fijo += CONFIG.bloques.atencionCliente;
+  pushSeg('stay', fijo);
+  G._stayReal = fijo;
+  $('ppStayReal').textContent = Math.round(fijo) + ' min';
+
+  // Evento aleatorio (aviso no bloqueante, +5 min)
+  if (G.eventos[i]){
+    pushSeg('stay', CONFIG.evento.extraMin);
+    G._stayReal += CONFIG.evento.extraMin;
+    $('ppStayReal').textContent = Math.round(G._stayReal)+' min';
+    toast(`⚠️ ${nombreParada(i)}: bodega bloqueada, +${CONFIG.evento.extraMin} min al Stay Time.`, '');
+  }
+
+  iniciarMinijuego(i);
+}
+
+// ---------- RETORNO_CEDIS ----------
+function retornoCEDIS(i, next){
+  $('estadoReloj').innerHTML = `🔄 <b>Retorno a CEDIS</b> — recarga por capacidad (bloque de ${CONFIG.bloques.retornoCEDIS} min, no es Stay Time)`;
+  trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000,
+    mid:false, onMid:()=> configurarDestino({ tipo:'cedis' }) };
+  setTimeout(()=>{
+    pushSeg('retorno', CONFIG.bloques.retornoCEDIS);
+    next();
+  }, CONFIG.ui.trasladoAnimMs);
+}
+
+function salirParada(i){
+  // Resumen de desviación durante 2 s
+  const atraso = G.llegadaReal[i] - G.plan.llegada[i];
+  $('rdTitulo').innerHTML = `Atraso acumulado: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
+  const stayReal = G.rechazoReal[i]
+    ? (G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin)
+    : (G._stayReal + G.maniobras[i].reduce((a,b)=>a+b,0));
+  $('rdDetalle').innerHTML =
+    `<b>${nombreParada(i)}</b> · ${canalLabel(i)}<br>`+
+    `Stay Time real ${Math.round(stayReal)} min vs planeado ${Math.round(G.plan.stay[i])} min`;
+  $('resumenDesv').classList.add('on');
+
+  setTimeout(()=>{
+    $('resumenDesv').classList.remove('on');
+    const irSiguiente = ()=>{
+      if (i < num.length-1) entrarTraslado(i+1);
+      else finalizarJornada();
+    };
+    // Retorno a CEDIS tras la parada 4 (sólo camión chico)
+    if (G.retornos.includes(i)) retornoCEDIS(i, irSiguiente);
+    else irSiguiente();
+  }, CONFIG.ui.resumenDesvMs);
+}
+
+// ---------- FIN → RESULTADOS ----------
+function finalizarJornada(){
+  $('estadoReloj').innerHTML = `🚚 regreso final a CEDIS`;
+  trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000, x0:2, x1:-8 };
+  setTimeout(()=>{
+    pushSeg('traslado', CONFIG.bloques.trasladoPorTramo);   // P7 → CEDIS
+    pushSeg('cedis', CONFIG.bloques.liquidacionFinal);      // liquidación
+    estadoResultados();
+  }, CONFIG.ui.trasladoAnimMs);
+}
+
+/* =====================================================================
+   FASE 2 — MINIJUEGO DE DESCARGA (precisión, no velocidad)
+   ===================================================================== */
+const aguja = $('mjAguja');
+const barraMJ = $('mjBarra');
+
+function anchoVerde(i, m, n){
+  const esUltima = (m === n-1);
+  if (esUltima) return CONFIG.mj.zonaVerdeUltima;           // el remate, 22%
+  if (RUTA.zonaEstrecha[i]) return CONFIG.mj.zonaVerdeEstrecha; // 12%
+  return CONFIG.mj.zonaVerde;                               // 18%
+}
+function factorVelocidad(m, n){
+  // Paradas de 5+ maniobras: acelera 8% por maniobra a partir de la 3ª.
+  if (n >= CONFIG.mj.umbralManiobrasAcelera && m >= 2){
+    return 1 + CONFIG.mj.aceleracionPorManiobra * (m - 1); // 3ª:+8%, 4ª:+16%, 5ª:+24%
+  }
+  return 1;
+}
+function etiquetaDificultad(i, m, n){
+  const partes = [];
+  if (m === n-1) partes.push('última maniobra, margen amplio (remate)');
+  else if (RUTA.zonaEstrecha[i]) partes.push('acceso estrecho, menos margen de maniobra');
+  if (n >= CONFIG.mj.umbralManiobrasAcelera && m >= 2) partes.push('andén saturado, la aguja va más rápido');
+  return partes.join(' · ');
+}
+
+function iniciarMinijuego(i){
+  const n = num[i];
+  G.mj = { activo:false, resolviendo:false, i, m:0, n, pos:0, cicloEff:CONFIG.mj.cicloBase, green:0 };
+  $('minijuego').classList.add('on');
+  arrancarManiobra();
+}
+
+function pintarZonas(green){
+  const y = CONFIG.mj.zonaAmarilla;
+  const gL = 0.5 - green/2, gR = 0.5 + green/2;
+  const yL = gL - y, yR = gR + y;
+  const V='var(--verde)', A='var(--amarillo)', R='var(--rojo)';
+  const p = x => (x*100).toFixed(1)+'%';
+  barraMJ.style.background =
+    `linear-gradient(90deg,`+
+    `${R} 0 ${p(Math.max(0,yL))}, ${A} ${p(Math.max(0,yL))} ${p(gL)},`+
+    `${V} ${p(gL)} ${p(gR)}, ${A} ${p(gR)} ${p(Math.min(1,yR))},`+
+    `${R} ${p(Math.min(1,yR))} 100%)`;
+}
+
+function arrancarManiobra(){
+  const {i, m, n} = G.mj;
+  G.mj.green = anchoVerde(i, m, n);
+  G.mj.cicloEff = CONFIG.mj.cicloBase / factorVelocidad(m, n);
+  G.mj.activo = true;
+  G.mj.resolviendo = false;
+  pintarZonas(G.mj.green);
+  $('mjContador').textContent = `Maniobra ${m+1} de ${n}`;
+  $('mjFeedback').innerHTML = '&nbsp;';
+  $('mjZonaTxt').textContent = 'Detén la aguja en la zona verde';
+  $('etqDificultad').textContent = etiquetaDificultad(i, m, n);
+}
+
+// Resolver la maniobra: sólo cuenta la POSICIÓN de la aguja (precisión de timing).
+// Apretar antes o después de la verde penaliza igual. Sin bonus por rapidez.
+function resolverManiobra(){
+  if (!G.mj || !G.mj.activo || G.mj.resolviendo) return; // input bloqueado / un solo input
+  G.mj.activo = false; G.mj.resolviendo = true;
+
+  const pos = G.mj.pos;
+  const half = G.mj.green/2;
+  const dist = Math.abs(pos - 0.5);
+  let tiempo, zona, color;
+  if (dist <= half){ tiempo=CONFIG.mj.tVerde; zona='¡VERDE!'; color='var(--verde)'; }
+  else if (dist <= half + CONFIG.mj.zonaAmarilla){ tiempo=CONFIG.mj.tAmarillo; zona='amarillo'; color='var(--amarillo)'; }
+  else { tiempo=CONFIG.mj.tRojo; zona='rojo'; color='var(--rojo)'; }
+
+  const {i, m, n} = G.mj;
+  G.maniobras[i].push(tiempo);
+  pushSeg('stay', tiempo);                     // suma al Stay Time real en vivo
+  G._stayReal = (G._stayReal||0) + tiempo;
+  $('ppStayReal').textContent = Math.round(G._stayReal) + ' min';
+  pintarPila(1 - (m+1)/n);
+
+  $('mjFeedback').innerHTML = `<span style="color:${color}">${zona} · ${tiempo.toFixed(1)} min</span>`;
+
+  setTimeout(()=>{
+    if (m+1 < n){ G.mj.m++; arrancarManiobra(); }
+    else { $('minijuego').classList.remove('on'); G.mj=null; salirParada(i); }
+  }, CONFIG.mj.resolverMs);
+}
+
+/* =====================================================================
+   HUD — avisos / toasts
+   ===================================================================== */
+function toast(txt, tipo){
+  const d = document.createElement('div');
+  d.className = 'toast' + (tipo? ' '+tipo : '');
+  d.textContent = txt;
+  $('avisos').prepend(d);
+  setTimeout(()=>{ d.style.opacity='0.35'; }, 3500);
+  setTimeout(()=>{ d.remove(); }, 7000);
+}
+
+/* =====================================================================
+   FASE 4 — PANTALLA DE RESULTADOS
+   ===================================================================== */
+function estadoResultados(){
+  G.estado='RESULTADOS';
+  $('minijuego').classList.remove('on');
+  mostrar('resultados');
+
+  // Simulación con la ejecución real (fuente de verdad) + contrafactual
+  const sim = simularJornada(G.camion, G.maniobras, G.eventos);
+  const contra = simularJornada(G.otroCamion, G.maniobras, G.eventos);
+  const costos = calcularCostos(G.camion, sim);
+  const costosContra = calcularCostos(G.otroCamion, contra);
+  const estrellas = estrellasPara(costos.total);
+
+  // --- Desglose apilado del Stay Time (concepto por concepto) ---
+  const agg = { estac:0, penal:0, atencion:0, descarga:0, evento:0, gestion:0 };
+  let traslados=0, retorno=0;
+  sim.paradas.forEach(p=>{ for(const k in agg) agg[k]+=p.desglose[k]; });
+  traslados = CONFIG.bloques.trasladoPorTramo * (sim.truncado ? 0 : num.length+1)
+            + CONFIG.bloques.cargaCEDIS + CONFIG.bloques.liquidacionFinal;
+  retorno = sim.retornos * CONFIG.bloques.retornoCEDIS;
+  const extra = sim.tiempoExtra;
+
+  // --- Tabla PLAN vs REAL por parada ---
+  let atrasoAcum = 0;
+  const filas = sim.paradas.map(p=>{
+    const planLleg = G.plan.llegada[p.i], planStay = G.plan.stay[p.i];
+    const atraso = p.llegada - planLleg;
+    const desv = p.stay - planStay;
+    const est = p.noEntregada ? 'NO ENTREGADA (corte 17:00)'
+              : p.rechazo ? 'RECHAZO por ventana' : 'OK';
+    return `<tr>
+      <td><b>P${p.i+1}</b> ${nombreParada(p.i)}${p.rechazo||p.noEntregada?' ⚠️':''}
+        <div class="sub">${canalLabel(p.i)}</div></td>
+      <td>${Math.round(planStay)}</td>
+      <td>${Math.round(p.stay)}</td>
+      <td class="${desv>0?'neg':desv<0?'pos':'zero'}">${firma(desv)}</td>
+      <td>${hhmm(planLleg)}</td>
+      <td>${hhmm(p.llegada)}</td>
+      <td class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)}</td>
+      <td class="sub">${est}</td>
+    </tr>`;
+  }).join('');
+
+  // --- Consejo operativo según el mayor contribuyente a la desviación ---
+  const consejo = generarConsejo(sim, contra, agg, costos, costosContra);
+
+  const estrellasStr = '★'.repeat(estrellas) + '☆'.repeat(5-estrellas);
+  const stackDesglose = renderStack([
+    ['Estacionamiento+maniobra', agg.estac+agg.penal, 'var(--c-stay)'],
+    ['Atención al cliente', agg.atencion, '#0ea5a3'],
+    ['Descarga', agg.descarga, '#2dd4bf'],
+    ['Eventos', agg.evento+agg.gestion, '#f472b6']
+  ]);
+  const stackNoStay = renderStack([
+    ['Traslados + CEDIS', traslados, 'var(--c-traslado)'],
+    ['Retorno CEDIS', retorno, 'var(--c-retorno)'],
+    ['Tiempo extra', extra, 'var(--c-extra)']
+  ]);
+
+  $('resultados').innerHTML = `
+    <h2>Cierre de jornada</h2>
+    <div class="grid2">
+      <div class="card">
+        <div class="sub">Con ${G.camion.nombre.toLowerCase()}</div>
+        <div class="cierreBig" style="color:${sim.tiempoExtra>0?'var(--bad)':'var(--ok)'}">${hhmm(sim.cierre)}</div>
+        <div>Jornada total <b>${Math.round(sim.total)} min</b> ·
+          tiempo extra <b class="${sim.tiempoExtra>0?'neg':'zero'}">${Math.round(sim.tiempoExtra)} min</b></div>
+        <div class="estrellas" style="margin-top:8px;color:#e0a800">${estrellasStr}</div>
+        <div class="sub">calificación sobre el costo total del turno</div>
+      </div>
+      <div class="card consejo">
+        <h3>Consejo operativo</h3>
+        <div>${consejo}</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3>Plan del planeador vs realidad — por parada</h3>
+      <div class="sub" style="margin-bottom:6px">El plan (465 min, cierra 14:45) asume el camión grande e ignora los accesos estrechos. Es un documento fijo hecho antes de elegir camión.</div>
+      <div class="scroll">
+      <table>
+        <thead><tr><th>Parada</th><th>Stay plan</th><th>Stay real</th><th>Desv.</th>
+          <th>Hora plan</th><th>Hora real</th><th>Atraso</th><th>Estado</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="card">
+        <h3>Desglose del Stay Time</h3>
+        ${stackDesglose}
+      </div>
+      <div class="card">
+        <h3>NO Stay Time</h3>
+        ${stackNoStay}
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3>Costo total del turno</h3>
+      ${renderCostos(costos)}
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3>Contrafactual — misma ejecución, misma semilla, el OTRO camión</h3>
+      <div class="sub" style="margin-bottom:8px">Qué habría pasado con ${G.otroCamion.nombre.toLowerCase()} conservando tu desempeño real en la descarga.</div>
+      <div class="scroll">
+      <table>
+        <thead><tr><th></th><th>${G.camion.nombre} (jugado)</th><th>${G.otroCamion.nombre} (contrafactual)</th></tr></thead>
+        <tbody>
+          <tr><td>Cierre</td><td>${hhmm(sim.cierre)}</td><td>${hhmm(contra.cierre)}</td></tr>
+          <tr><td>Jornada total</td><td>${Math.round(sim.total)} min</td><td>${Math.round(contra.total)} min</td></tr>
+          <tr><td>Tiempo extra</td><td>${Math.round(sim.tiempoExtra)} min</td><td>${Math.round(contra.tiempoExtra)} min</td></tr>
+          <tr><td>Costo total</td><td>$${costos.total.toFixed(0)}</td><td>$${costosContra.total.toFixed(0)}</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin:18px 0 40px">
+      <button class="primary interactivo" id="btnRepetir">Repetir ruta (misma semilla)</button>
+      <button class="interactivo" id="btnMenu">Menú</button>
+    </div>
+  `;
+  $('btnRepetir').onclick = ()=> estadoSeleccion();   // conserva CONFIG.seed ⇒ comparación justa
+  $('btnMenu').onclick = ()=> estadoMenu();
+}
+
+function renderStack(items){
+  const total = items.reduce((a,[,v])=>a+v,0) || 1;
+  const segs = items.map(([,v,c])=>`<div class="s" style="width:${v/total*100}%;background:${c}"></div>`).join('');
+  const leg = items.map(([n,v,c])=>`<div class="kv"><span><i style="display:inline-block;width:9px;height:9px;background:${c};border-radius:2px;margin-right:6px"></i>${n}</span><b>${Math.round(v)} min</b></div>`).join('');
+  return `<div class="stack">${segs}</div>${leg}`;
+}
+function renderCostos(c){
+  const filas = [
+    ['Tiempo extra', c.extra],
+    ['Rechazos ('+c.rechazos+')', c.cRechazo],
+    ['Cajas no entregadas ('+c.cajasPerdidas+')', c.cCajas],
+    ['Retorno a CEDIS', c.cRetorno]
+  ].map(([n,v])=>`<div class="kv"><span class="muted">${n}</span><b>$${v.toFixed(0)}</b></div>`).join('');
+  return filas + `<hr style="border-color:var(--line)"><div class="kv"><span><b>TOTAL</b></span><b style="font-size:18px">$${c.total.toFixed(0)}</b></div>`;
+}
+
+// Consejo según el mayor contribuyente a la desviación (4 casos).
+function generarConsejo(sim, contra, agg, costos, costosContra){
+  const rechazos = costos.rechazos;
+  // Exceso de ejecución: minutos por encima del óptimo verde en la descarga.
+  const optimo = num.reduce((a,n)=>a+n,0) * CONFIG.mj.tVerde;
+  const ejecucion = Math.max(0, agg.descarga - optimo);
+  const eventos = agg.evento + agg.gestion;
+  // Impacto de flota: cuánto peor/mejor salió tu camión frente al otro.
+  const flota = sim.total - contra.total;
+
+  if (rechazos > 0)
+    return `<b>Propagación de atraso.</b> Tuviste ${rechazos} rechazo(s) por ventana: el atraso se acumuló parada tras parada hasta llegar fuera de horario. El costo no es lineal — un retraso temprano condena entregas posteriores. Ataca el origen del atraso, no la última parada.`;
+  if (flota > ejecucion && flota > eventos)
+    return `<b>Decisión de flota.</b> Con ${G.otroCamion.nombre.toLowerCase()} habrías cerrado ${Math.round(Math.abs(flota))} min ${flota>0?'antes':'después'}. Para esta ruta (${RUTA.cajas.reduce((a,b)=>a+b)} cajas, ${RUTA.zonaEstrecha.filter(Boolean).length} accesos estrechos), el camión importó más que tu ejecución.`;
+  if (ejecucion >= eventos && ejecucion > 0)
+    return `<b>Ejecución de descarga.</b> Perdiste ~${Math.round(ejecucion)} min por maniobras fuera de la zona verde. La habilidad sí mueve la aguja aquí: cada maniobra imprecisa suma minutos que se propagan al resto de la jornada.`;
+  if (eventos > 0)
+    return `<b>Eventos operativos.</b> Los imprevistos sumaron ${Math.round(eventos)} min. No dependen de ti, pero un buen colchón de tiempo temprano absorbe estos golpes sin generar rechazos.`;
+  return `<b>Jornada limpia.</b> Ejecución precisa y flota adecuada: cerraste sin rechazos y con mínimo tiempo extra. Este es el desempeño de referencia.`;
+}
+
+/* =====================================================================
+   INPUT — Espacio (con preventDefault) y tap. Sin dependencia de teclado.
+   ===================================================================== */
+window.addEventListener('keydown', (e)=>{
+  if (e.code === 'Space' || e.key === ' '){
+    e.preventDefault();                     // evita el scroll de la página
+    if (G.mj) resolverManiobra();
+  }
+}, { passive:false });
+
+$('btnDescargar').addEventListener('click', (e)=>{ e.preventDefault(); resolverManiobra(); });
+$('btnDescargar').addEventListener('touchstart', (e)=>{ e.preventDefault(); resolverManiobra(); }, { passive:false });
+
+// ---------- Selector de ruta en el menú ----------
+// Rellena el <select> con las rutas de CONFIG + una opción aleatoria.
+(function poblarSelectorRutas(){
+  const sel = $('selRuta');
+  Object.keys(CONFIG.rutas).forEach(key=>{
+    const o = document.createElement('option');
+    o.value = key; o.textContent = CONFIG.rutas[key].nombre;
+    sel.appendChild(o);
+  });
+  const oRnd = document.createElement('option');
+  oRnd.value = '__aleatoria__'; oRnd.textContent = '🎲 Sorpréndeme (ruta y eventos al azar)';
+  sel.appendChild(oRnd);
+  sel.value = CONFIG.rutaDefault;
+
+  const describir = ()=>{
+    if (sel.value === '__aleatoria__'){
+      $('selRutaDesc').innerHTML = 'Cada partida elige una ruta y una semilla nuevas. La comparación con «repetir ruta» sigue siendo justa (conserva ambas).';
+      return;
+    }
+    const r = CONFIG.rutas[sel.value];
+    const total = r.cajas.reduce((a,b)=>a+b,0);
+    const est = r.zonaEstrecha.filter(Boolean).length;
+    $('selRutaDesc').innerHTML = `${r.cajas.length} paradas · ${total} cajas · ${est} acceso(s) estrecho(s)` +
+      (sel.value==='canonica' ? ' · <b>semilla fija (demo reproducible)</b>' : '');
+  };
+  sel.addEventListener('change', describir);
+  describir();
+})();
+
+$('btnEmpezar').onclick = ()=>{
+  const sel = $('selRuta');
+  let key = sel.value;
+  if (key === '__aleatoria__'){
+    const keys = Object.keys(CONFIG.rutas);
+    key = keys[Math.floor(Math.random()*keys.length)];
+    G.seedActual = (Math.random()*1e9) | 0;   // eventos distintos cada vez
+  } else {
+    // Rutas nombradas: semilla fija = demo reproducible (respeta los números del spec).
+    G.seedActual = CONFIG.seed;
+  }
+  G.rutaKey = key;
+  aplicarRuta(key);
+  estadoSeleccion();
+};
+
+/* Arranque */
+estadoMenu();
+</script>
+</body>
+</html>

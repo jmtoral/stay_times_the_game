@@ -356,6 +356,18 @@ const CONFIG = {
   // Evento aleatorio
   evento: { probabilidad: 0.25, extraMin: 5 },
 
+  // Geocerca: por azar el camión se estaciona FUERA del punto autorizado. Caso
+  // anómalo pero garantizado al menos una vez por ruta. NO suma minutos fijos:
+  // sólo endurece el minijuego (zona verde más angosta y aguja más rápida), así
+  // que un jugador perfecto sigue clavando la verde y los totales de referencia
+  // (468/496/465) no cambian.
+  geocerca: {
+    probabilidad: 0.15,          // azar por parada
+    forzarAlMenosUna: true,      // garantiza ≥1 por ruta
+    factorZonaVerde: 0.65,       // multiplica el ancho verde (~35% más angosto)
+    factorVelocidadAguja: 1.25   // acelera la aguja (~25%)
+  },
+
   // Ventanas de recepción
   ventana: { gestionRechazoMin: 8 },
 
@@ -581,6 +593,7 @@ const G = {
   retornos:[],                // índices de parada tras los que el camión recarga
   plan:null,
   eventos:[],                 // bool por parada (pre-rodados con RNG)
+  geocercas:[],               // bool por parada: camión fuera de geocerca (anomalía)
   maniobras:[],               // tiempos reales por parada [[..],[..],...]
   paradaIdx:0,
   reloj: CONFIG.jornada.inicioMin,
@@ -714,6 +727,42 @@ function pintarPila(fraccion){
   }
 }
 pintarPila(1);
+
+// Geocerca: zona de estacionamiento autorizado dibujada en el piso. Teal cuando el
+// camión está dentro; roja y pulsante cuando se estaciona fuera (anomalía). Postes
+// alrededor para que se lea como un perímetro.
+const GEO = { cx:0.4, cz:1.2, R:2.3 };       // centro y radio de la geocerca
+const STOP_X_OUT = -3.4;                     // el camión queda FUERA del aro
+const TEAL = 0x14b8a6;
+const geofenceGrp = new THREE.Group();
+geofenceGrp.position.set(GEO.cx, 0.02, GEO.cz);
+const geoFill = new THREE.Mesh(new THREE.CircleGeometry(GEO.R, 48),
+  new THREE.MeshBasicMaterial({ color:TEAL, transparent:true, opacity:0.13, depthWrite:false }));
+geoFill.rotation.x = -Math.PI/2;
+const geoRing = new THREE.Mesh(new THREE.RingGeometry(GEO.R-0.16, GEO.R, 48),
+  new THREE.MeshBasicMaterial({ color:TEAL, transparent:true, opacity:0.75, depthWrite:false }));
+geoRing.rotation.x = -Math.PI/2;
+const geoPosts = [];
+for (let a=0;a<8;a++){
+  const ang = a/8 * Math.PI*2;
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.7,8),
+    new THREE.MeshBasicMaterial({ color:TEAL }));
+  post.position.set(Math.cos(ang)*GEO.R, 0.35, Math.sin(ang)*GEO.R);
+  geoPosts.push(post); geofenceGrp.add(post);
+}
+geofenceGrp.add(geoFill, geoRing);
+geofenceGrp.visible = false;
+scene.add(geofenceGrp);
+const geofence = { visible:false, fuera:false };
+function configurarGeocerca(estado){
+  // estado: null = ocultar; false = dentro (teal); true = fuera de geocerca (rojo)
+  if (estado === null || estado === undefined){ geofenceGrp.visible=false; geofence.visible=false; return; }
+  geofence.visible = true; geofence.fuera = !!estado; geofenceGrp.visible = true;
+  const col = estado ? RED[500] : TEAL;
+  geoFill.material.color.setHex(col);
+  geoRing.material.color.setHex(col);
+  geoPosts.forEach(p=>p.material.color.setHex(col));
+}
 configurarDestino({ tipo:'cedis' });
 
 // Bucle de render + reloj de animación (delta-time, se pausa en segundo plano)
@@ -727,17 +776,30 @@ function loop(now){
   if (!document.hidden) animClock += dt;   // pausa el acumulador en visibilitychange
 
   // Animación de traslado (delta-time): el camión SALE de pantalla por la derecha,
-  // a mitad se reconfigura el destino (otro lugar) y ENTRA por la izquierda.
+  // a mitad se reconfigura el destino (otro lugar) y ENTRA por la izquierda hasta su
+  // punto de estacionamiento (dentro o FUERA de la geocerca).
   if (trasladoAnim){
     const k = Math.min(1, (animClock - trasladoAnim.t0) / trasladoAnim.dur);
     if (k < 0.5){
-      truck.position.x = STOP_X + (OFF_DER - STOP_X) * (k*2);       // salida
+      truck.position.x = trasladoAnim.desde + (OFF_DER - trasladoAnim.desde) * (k*2);   // salida
     } else {
       if (!trasladoAnim.mid){ trasladoAnim.mid = true; trasladoAnim.onMid && trasladoAnim.onMid(); }
-      truck.position.x = OFF_IZQ + (STOP_X - OFF_IZQ) * ((k-0.5)*2); // llegada al nuevo lugar
+      truck.position.x = OFF_IZQ + (trasladoAnim.hasta - OFF_IZQ) * ((k-0.5)*2);         // llegada
     }
     truck.position.y = Math.abs(Math.sin(animClock*14)) * 0.05;      // leve bamboleo
-    if (k >= 1){ trasladoAnim = null; truck.position.set(STOP_X, 0, 2); }
+    if (k >= 1){ const h = trasladoAnim.hasta; trasladoAnim = null; truck.position.set(h, 0, 2); }
+  }
+
+  // Pulso de la geocerca: sutil dentro (teal), marcado y palpitante fuera (rojo).
+  if (geofence.visible){
+    const base = geofence.fuera ? 0.24 : 0.12;
+    const amp  = geofence.fuera ? 0.16 : 0.04;
+    const sp   = geofence.fuera ? 3.4 : 1.3;
+    const o = base + amp*Math.abs(Math.sin(animClock*sp));
+    geoFill.material.opacity = o;
+    geoRing.material.opacity = Math.min(1, o + 0.5);
+    const s = geofence.fuera ? (1 + 0.025*Math.sin(animClock*3.4)) : 1;
+    geofenceGrp.scale.set(s, 1, s);
   }
 
   // Aguja del minijuego (posición por delta-time → igual a 60 y 120 Hz)
@@ -851,13 +913,25 @@ function prerodarEventos(){
   return ev;
 }
 
+// Pre-rodar geocercas con el mismo RNG sembrado. Anomalía por parada; si ninguna
+// salió, se fuerza una en parada aleatoria (garantiza ≥1 por ruta).
+function prerodarGeocercas(){
+  const gc = [];
+  for (let i=0;i<num.length;i++) gc.push(G.rng() < CONFIG.geocerca.probabilidad);
+  if (CONFIG.geocerca.forzarAlMenosUna && !gc.some(Boolean)){
+    gc[Math.floor(G.rng()*num.length)] = true;
+  }
+  return gc;
+}
+
 function elegirCamion(id){
   G.camion = CONFIG.camiones[id];
   G.otroCamion = CONFIG.camiones[id==='chico' ? 'grande' : 'chico'];
   G.retornos = calcularRetornos(G.camion, RUTA.cajas);
-  // RNG y eventos se fijan con la semilla ACTIVA (estable al repetir ruta).
+  // RNG, eventos y geocercas se fijan con la semilla ACTIVA (estables al repetir).
   G.rng = mulberry32(G.seedActual);
   G.eventos = prerodarEventos();
+  G.geocercas = prerodarGeocercas();
   G.plan = calcularPlan();
   iniciarRuta();
 }
@@ -931,8 +1005,15 @@ function entrarTraslado(i){
   // El reloj de Stay Time está detenido; el de jornada SÍ corre (avanza 17 min).
   $('estadoReloj').innerHTML = `🚚 en traslado — <b>Stay Time detenido</b>, la jornada sigue corriendo`;
   // A mitad de la animación el destino cambia a la parada i (otro lugar distinto).
+  // Si esa parada está fuera de geocerca, el camión estaciona FUERA del aro.
   trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000,
-    mid:false, onMid:()=> configurarDestino({ tipo:'parada', i, canal:canalDe(i) }) };
+    mid:false, desde:truck.position.x, hasta:STOP_X,
+    onMid:()=>{
+      configurarDestino({ tipo:'parada', i, canal:canalDe(i) });
+      const fuera = !!G.geocercas[i];
+      configurarGeocerca(fuera);
+      trasladoAnim.hasta = fuera ? STOP_X_OUT : STOP_X;
+    } };
   setTimeout(()=>{
     pushSeg('traslado', CONFIG.bloques.trasladoPorTramo);
     entrarParada(i);
@@ -989,6 +1070,12 @@ function entrarParada(i){
     toast(`⚠️ ${nombreParada(i)}: bodega bloqueada, +${CONFIG.evento.extraMin} min al Stay Time.`, '');
   }
 
+  // Anomalía de geocerca (no suma minutos; endurece la maniobra)
+  if (G.geocercas[i]){
+    toast(`🛰️ ${nombreParada(i)}: estacionamiento FUERA de geocerca. El camión no pudo `+
+          `entrar al punto autorizado; las maniobras son más difíciles.`, 'bad');
+  }
+
   iniciarMinijuego(i);
 }
 
@@ -996,7 +1083,8 @@ function entrarParada(i){
 function retornoCEDIS(i, next){
   $('estadoReloj').innerHTML = `🔄 <b>Retorno a CEDIS</b> — recarga por capacidad (bloque de ${CONFIG.bloques.retornoCEDIS} min, no es Stay Time)`;
   trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000,
-    mid:false, onMid:()=> configurarDestino({ tipo:'cedis' }) };
+    mid:false, desde:truck.position.x, hasta:STOP_X,
+    onMid:()=>{ configurarDestino({ tipo:'cedis' }); configurarGeocerca(null); } };
   setTimeout(()=>{
     pushSeg('retorno', CONFIG.bloques.retornoCEDIS);
     next();
@@ -1030,7 +1118,9 @@ function salirParada(i){
 // ---------- FIN → RESULTADOS ----------
 function finalizarJornada(){
   $('estadoReloj').innerHTML = `🚚 regreso final a CEDIS`;
-  trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000, x0:2, x1:-8 };
+  trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000,
+    mid:false, desde:truck.position.x, hasta:STOP_X,
+    onMid:()=>{ configurarDestino({ tipo:'cedis' }); configurarGeocerca(null); } };
   setTimeout(()=>{
     pushSeg('traslado', CONFIG.bloques.trasladoPorTramo);   // P7 → CEDIS
     pushSeg('cedis', CONFIG.bloques.liquidacionFinal);      // liquidación
@@ -1046,19 +1136,26 @@ const barraMJ = $('mjBarra');
 
 function anchoVerde(i, m, n){
   const esUltima = (m === n-1);
-  if (esUltima) return CONFIG.mj.zonaVerdeUltima;           // el remate, 22%
-  if (RUTA.zonaEstrecha[i]) return CONFIG.mj.zonaVerdeEstrecha; // 12%
-  return CONFIG.mj.zonaVerde;                               // 18%
+  let verde = esUltima ? CONFIG.mj.zonaVerdeUltima          // el remate, 22%
+    : RUTA.zonaEstrecha[i] ? CONFIG.mj.zonaVerdeEstrecha    // 12%
+    : CONFIG.mj.zonaVerde;                                  // 18%
+  // Fuera de geocerca: la verde se angosta (se apila sobre estrecha/última).
+  if (G.geocercas[i]) verde *= CONFIG.geocerca.factorZonaVerde;
+  return verde;
 }
-function factorVelocidad(m, n){
+function factorVelocidad(i, m, n){
+  let f = 1;
   // Paradas de 5+ maniobras: acelera 8% por maniobra a partir de la 3ª.
   if (n >= CONFIG.mj.umbralManiobrasAcelera && m >= 2){
-    return 1 + CONFIG.mj.aceleracionPorManiobra * (m - 1); // 3ª:+8%, 4ª:+16%, 5ª:+24%
+    f *= 1 + CONFIG.mj.aceleracionPorManiobra * (m - 1);    // 3ª:+8%, 4ª:+16%, 5ª:+24%
   }
-  return 1;
+  // Fuera de geocerca: la aguja va más rápido.
+  if (G.geocercas[i]) f *= CONFIG.geocerca.factorVelocidadAguja;
+  return f;
 }
 function etiquetaDificultad(i, m, n){
   const partes = [];
+  if (G.geocercas[i]) partes.push('🛰️ fuera de geocerca, menos margen');
   if (m === n-1) partes.push('última maniobra, margen amplio (remate)');
   else if (RUTA.zonaEstrecha[i]) partes.push('acceso estrecho, menos margen de maniobra');
   if (n >= CONFIG.mj.umbralManiobrasAcelera && m >= 2) partes.push('andén saturado, la aguja va más rápido');
@@ -1088,7 +1185,7 @@ function pintarZonas(green){
 function arrancarManiobra(){
   const {i, m, n} = G.mj;
   G.mj.green = anchoVerde(i, m, n);
-  G.mj.cicloEff = CONFIG.mj.cicloBase / factorVelocidad(m, n);
+  G.mj.cicloEff = CONFIG.mj.cicloBase / factorVelocidad(i, m, n);
   G.mj.activo = true;
   G.mj.resolviendo = false;
   pintarZonas(G.mj.green);
@@ -1171,9 +1268,10 @@ function estadoResultados(){
     const desv = p.stay - planStay;
     const est = p.noEntregada ? 'NO ENTREGADA (corte 17:00)'
               : p.rechazo ? 'RECHAZO por ventana' : 'OK';
+    const geo = G.geocercas[p.i] ? ' 🛰️' : '';
     return `<tr>
-      <td><b>P${p.i+1}</b> ${nombreParada(p.i)}${p.rechazo||p.noEntregada?' ⚠️':''}
-        <div class="sub">${canalLabel(p.i)}</div></td>
+      <td><b>P${p.i+1}</b> ${nombreParada(p.i)}${p.rechazo||p.noEntregada?' ⚠️':''}${geo}
+        <div class="sub">${canalLabel(p.i)}${G.geocercas[p.i]?' · fuera de geocerca':''}</div></td>
       <td>${Math.round(planStay)}</td>
       <td>${Math.round(p.stay)}</td>
       <td class="${desv>0?'neg':desv<0?'pos':'zero'}">${firma(desv)}</td>

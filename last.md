@@ -35,6 +35,23 @@ HUD en HTML/CSS plano. Sin build step.
   `nombreParada`, `canalDe`, `canalLabel`, `canalBadge`.
 - Verificado headless: números intactos + resultados renderizan con ambos canales, 0 errores.
 
+## Geocerca (nueva mecánica, a petición del usuario)
+- `CONFIG.geocerca`: probabilidad 0.15/parada, forzada ≥1 (`prerodarGeocercas`, mismo
+  patrón que `prerodarEventos`), `factorZonaVerde` 0.65 y `factorVelocidadAguja` 1.25.
+- **Decisión de diseño confirmada con el usuario**: NO suma minutos fijos, sólo endurece
+  el minijuego (se apila sobre estrecha/última/fatiga). Por eso los números canónicos
+  468/496/465 quedan intactos incluso si TODAS las paradas estuvieran fuera de geocerca
+  (verificado headless).
+- Aviso no bloqueante al llegar ("🛰️ fuera de geocerca") + entra en `etiquetaDificultad()`
+  (visible antes de la 1ª maniobra) + marca 🛰️ en la tabla de resultados.
+- **3D**: aro de geocerca en el piso (`geofenceGrp`/`geoFill`/`geoRing`/`geoPosts`), teal
+  cuando el camión está dentro, rojo y pulsante cuando está fuera; el camión se estaciona
+  visualmente desplazado del aro (`STOP_X_OUT`). La animación de traslado ahora usa
+  `desde/hasta` en vez de offsets fijos, para soportar el punto de parada variable.
+- Verificado headless: números intactos, pre-rodado reproducible con la semilla,
+  dificultad se aplica sólo fuera de geocerca (verde ×0.65, aguja ×1.25), 3D sin errores
+  (~750 tris con el aro visible, bajo 5000), resultados marcan la anomalía.
+
 ## Despliegue online (GitHub Pages)
 - Repo: https://github.com/jmtoral/stay_times_the_game (público)
 - URL en vivo: https://jmtoral.github.io/stay_times_the_game/

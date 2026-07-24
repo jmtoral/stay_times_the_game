@@ -35,6 +35,16 @@ HUD en HTML/CSS plano. Sin build step.
   `nombreParada`, `canalDe`, `canalLabel`, `canalBadge`.
 - Verificado headless: números intactos + resultados renderizan con ambos canales, 0 errores.
 
+## Despliegue online (GitHub Pages)
+- Repo: https://github.com/jmtoral/stay_times_the_game (público)
+- URL en vivo: https://jmtoral.github.io/stay_times_the_game/
+- El `index.html` con CDN funciona tal cual en Pages (no bloquea unpkg). No se inlineó
+  Three.js. `.claude/` está en `.gitignore`.
+- Verificado headless contra la URL en vivo: menú carga, Three.js baja del CDN, 0 errores
+  de consola reales (los "errores" que aparecen en el log son telemetría de Chrome).
+- Nota: para publicar como Artifact de claude.ai en el futuro habría que INLINEAR Three.js
+  (el sandbox del Artifact bloquea CDNs); en GitHub Pages no hace falta.
+
 ## Tercera iteración
 - **Minijuego con fondo transparente**: el panel dejó de tapar/lavar el camión; ahora se
   aprecia cómo baja la pila de cajas mientras juegas. Cajas recoloreadas a cartón visible.

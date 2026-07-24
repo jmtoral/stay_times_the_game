@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Stay Time — Simulador de jornada de reparto (KOF)</title>
+<title>Stay Time — Simulador de jornada de reparto</title>
 
 <!-- Three.js: versión FIJA vía importmap ES module. En r160 three.module.js es
      autocontenido (no hay three.core.js). URL verificada 200 antes de fijarla. -->
@@ -17,7 +17,7 @@
 
 <style>
   :root{
-    /* Tema/branding con la paleta de rojos KOF (red-50 … red-950).
+    /* Tema/branding con una paleta de rojos (red-50 … red-950).
        Los colores FUNCIONALES (categorías del reloj + zonas del minijuego)
        se mantienen distinguibles por legibilidad; sólo 'extra' y 'rojo' usan
        el rojo de la paleta. */
@@ -26,7 +26,7 @@
     --red-800:#660000; --red-900:#330000; --red-950:#240000;
 
     /* Tema CLARO: superficies claras con leve tinte cálido, texto oscuro, rojo
-       KOF sólo como acento/branding para que contraste (no inunde la pantalla). */
+       sólo como acento/branding para que contraste (no inunde la pantalla). */
     --bg:#f2ebeb; --panel:#ffffff; --panel2:#f7efef; --line:#e2d0d0;
     --txt:#2a1414; --muted:#8a6a6a; --accent:var(--red-600);
     /* categorías del reloj de jornada (distintas entre sí, oscuras para leerse en claro) */
@@ -160,7 +160,7 @@
   <div class="screen on" id="menu">
     <div class="card">
       <h1>Stay Time</h1>
-      <div class="muted">Simulador de jornada de reparto · Operaciones KOF</div>
+      <div class="muted">Simulador de jornada de reparto · Operaciones</div>
       <div class="obj">
         <b>Qué vas a decidir y ejecutar:</b><br>
         1. Elegir la flota para la ruta del día.<br>
@@ -611,7 +611,7 @@ const G = {
 const canvas = document.getElementById('canvas3d');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // limitado a 2
-// Paleta de rojos KOF para el 3D (misma que el CSS).
+// Paleta de rojos para el 3D (misma que el CSS).
 const RED = { 50:0xffe5e5,100:0xffcccc,200:0xff9999,300:0xff6666,400:0xff3333,
   500:0xff0000,600:0xcc0000,700:0x990000,800:0x660000,900:0x330000,950:0x240000 };
 

@@ -16,7 +16,7 @@ HUD en HTML/CSS plano. Sin build step.
 - **Animación de traslado rehecha**: el camión SALE de pantalla por la derecha, a mitad
   se reconfigura el `destino` (edificio con forma/color/posición distintos por parada) y
   ENTRA por la izquierda — se siente que llega a otro lugar.
-- **Paleta de rojos KOF** aplicada al tema/branding (CSS + escena 3D). Los colores
+- **Paleta de rojos corporativa** aplicada al tema/branding (CSS + escena 3D). Los colores
   funcionales (4 categorías del reloj + zonas verde/amarillo/rojo del minijuego) se
   mantienen distinguibles por legibilidad; sólo 'extra' y 'rojo' usan el rojo de la paleta.
 - Verificado headless en Chrome: canónica intacta (468/496/465, C.P5=12:15), rutas nuevas
@@ -24,7 +24,7 @@ HUD en HTML/CSS plano. Sin build step.
 
 ## Segunda iteración de UI (a petición del usuario)
 - **Tema CLARO**: "demasiado rojo" → superficies claras (bg #f2ebeb, panels blancos,
-  texto oscuro), rojo KOF sólo como acento/branding. Escena 3D también aclarada (fondo,
+  texto oscuro), rojo corporativo sólo como acento/branding. Escena 3D también aclarada (fondo,
   suelo, edificios) con camión rojo que contrasta. Corregidos varios `var(--x)cc`/`ee`
   que eran CSS inválido (ahora hex8 explícito).
 - **Nombres y canal por parada**: cada ruta tiene `nombres[]` y `canal[]` (paralelos a

@@ -4,7 +4,7 @@ código. Es la fuente de verdad; no improvises fuera de lo que dice salvo
 que sea ambiguo, en cuyo caso documenta la decisión en last.md.
 
 ## Contexto
-Este es un serious game para personal de operaciones de reparto de KOF.
+Este es un serious game para personal de operaciones de reparto.
 El objetivo pedagógico manda sobre el espectáculo visual — si hay que
 elegir entre "verse más impresionante" y "enseñar el concepto claro",
 gana lo segundo.

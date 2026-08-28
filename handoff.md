@@ -150,20 +150,24 @@ Todas las tareas descritas a continuación ya fueron codificadas e integradas en
 - **Nuevo flujo**: `MENU → BRIEFING → TRASLADO → PARADA → RESULTADOS`
 - **Auto-asignar** `G.camion = CONFIG.camion` al iniciar la partida.
 
-### T2: Menos paradas + ajustar tiempos
-- **Ruta canónica**: 5 paradas (no 7). Las demás rutas se ajustan proporcionalmente.
-- **Ajustar** `trasladoPorTramo` y `atencionCliente` para que la tensión con 8 horas funcione.
-- **Diseño propuesto** para ruta canónica (5 paradas):
+### T2: Menos paradas + calibración de dificultad (Punto Medio)
+- **Ruta canónica**: 5 paradas (no 7). Las demás rutas calibradas proporcionalmente.
+- **Tiempos equilibrados**: `trasladoPorTramo: 20` min (punto medio entre 17 y 25), `atencionCliente: 13` min (punto medio entre 12 y 15).
+- **Minijuego más noble**: aguja más suave (`cicloBase: 1.8`), zona verde más amplia (`zonaVerde: 0.20`, estrecha `0.14`), penalizaciones reducidas (`tAmarillo: 6.2`, `tRojo: 8.0`).
+- **Diseño calibrado** para ruta canónica (5 paradas):
   ```
   cajas:        [100, 80, 120, 80, 100]   // suma 480
   zonaEstrecha: [false, true, false, false, true]
   ventanaCierre:[null, null, "10:45", null, "13:30"]
-  trasladoPorTramo: 25 (era 17)
-  atencionCliente: 15 (era 12)
+  trasladoPorTramo: 20
+  atencionCliente: 13
   maniobras: [5, 4, 6, 4, 5] = 24 total
   ```
-- **Tensión**: jugador perfecto → 451 min (29 min de margen). Jugador mediocre (avg amarillo) → ~487 min (7 min de rebase, última parada en riesgo). Jugador malo → 535+ min, pierde 1-2 paradas.
-- `trasladoPorTramo` se hace PER-ROUTE (propiedad opcional de cada ruta). Fallback a `CONFIG.bloques.trasladoPorTramo`.
+- **Curva de tensión equilibrada**:
+  - Jugador perfecto: ~416 min → cierra 13:56 (64 min de holgura, NPS 100%).
+  - Jugador promedio (verdes y amarillos): ~430 min → cierra 14:10 (50 min de holgura, NPS ~85%).
+  - Jugador descuidado: ~450–470 min → cierra cerca de las 14:40 (NPS ~50–60%).
+  - Jugador muy malo: >480 min → excede las 15:00 y sufre penalizaciones.
 
 ### T3: Límite de 8 horas
 - **corteDuroMin** pasa de 17:00 (1020) a **15:00 (900)**.

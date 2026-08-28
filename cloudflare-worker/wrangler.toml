@@ -1,0 +1,10 @@
+name = "stay-times-leaderboard"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Para habilitar almacenamiento persistente en la nube:
+# 1. Ejecuta: npx wrangler kv:namespace create LEADERBOARD_KV
+# 2. Copia el 'id' generado y pégalo abajo:
+# [[kv_namespaces]]
+# binding = "LEADERBOARD_KV"
+# id = "PEGA_TU_KV_ID_AQUI"

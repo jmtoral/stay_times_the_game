@@ -293,17 +293,17 @@ const CONFIG = {
   bloques: {
     cargaCEDIS: 35,
     liquidacionFinal: 25,
-    trasladoPorTramo: 25,         // default; cada ruta puede sobreescribirlo
-    atencionCliente: 15           // Stay Time que la habilidad NO acelera
+    trasladoPorTramo: 20,         // default calibrado a punto medio (antes 25)
+    atencionCliente: 13           // Stay Time fijo de atención (punto medio, antes 15)
   },
 
   cajasPorManiobra: 20,
 
-  /* Catálogo de rutas. trasladoPorTramo es opcional por ruta (fallback a bloques).
-     DISEÑO DE TENSIÓN (canónica, 5 paradas):
-     - Perfecto:  451 min → cierra 14:31, 29 min de margen.
-     - Mediocre (avg amarillo): ~487 min → 7 min de rebase, última parada en riesgo.
-     - Malo (avg rojo): ~535 min → pierde 1-2 paradas. */
+  /* Catálogo de rutas (calibradas a dificultad media y disfrutable):
+     - Jugador perfecto:  ~416 min → cierra 13:56 (64 min de holgura, NPS 100%).
+     - Jugador promedio:  ~430 min → cierra 14:10 (50 min de holgura, NPS ~85%).
+     - Jugador descuidado: ~450–470 min → cierra cerca de las 14:40 (NPS ~50–60%).
+     - Jugador muy malo:  >480 min → excede las 15:00 y sufre penalizaciones. */
   rutas: {
     canonica: {
       nombre:'Ruta estándar (5 paradas, 480 cajas)',
@@ -315,7 +315,7 @@ const CONFIG = {
     },
     express: {
       nombre:'Express centro (3 paradas, rápida)',
-      trasladoPorTramo: 20,
+      trasladoPorTramo: 18,
       cajas:        [80, 100, 80],
       zonaEstrecha: [true, false, true],
       ventanaCierre:[null, "10:00", null],
@@ -324,7 +324,7 @@ const CONFIG = {
     },
     pesada: {
       nombre:'Ruta pesada (7 paradas, desafiante)',
-      trasladoPorTramo: 15,
+      trasladoPorTramo: 13,
       cajas:        [80, 60, 100, 40, 80, 60, 80],
       zonaEstrecha: [false, true, false, false, true, false, true],
       ventanaCierre:[null, null, "10:00", null, "12:00", null, "14:00"],
@@ -340,16 +340,16 @@ const CONFIG = {
     estacionamiento:6, penalizacionEstrecha:8
   },
 
-  // Minijuego de descarga (precisión, no velocidad)
+  // Minijuego de descarga (calibrado a punto medio de dificultad)
   mj: {
-    cicloBase: 1.6,
-    zonaVerde: 0.18,
-    zonaVerdeEstrecha: 0.12,
-    zonaVerdeUltima: 0.22,
-    zonaAmarilla: 0.16,
-    aceleracionPorManiobra: 0.08,
+    cicloBase: 1.8,               // aguja un poco más suave y controlable (antes 1.6)
+    zonaVerde: 0.20,              // 20% de ancho base (antes 0.18)
+    zonaVerdeEstrecha: 0.14,      // 14% en acceso estrecho (antes 0.12)
+    zonaVerdeUltima: 0.25,        // 25% remate final
+    zonaAmarilla: 0.17,           // 17% a cada lado
+    aceleracionPorManiobra: 0.07,
     umbralManiobrasAcelera: 5,
-    tVerde: 5.0, tAmarillo: 6.5, tRojo: 8.5,
+    tVerde: 5.0, tAmarillo: 6.2, tRojo: 8.0,
     resolverMs: 700
   },
 
@@ -363,8 +363,8 @@ const CONFIG = {
   geocerca: {
     probabilidad: 0.15,
     forzarAlMenosUna: true,
-    factorZonaVerde: 0.65,
-    factorVelocidadAguja: 1.25
+    factorZonaVerde: 0.70,
+    factorVelocidadAguja: 1.20
   },
 
   ventana: { gestionRechazoMin: 8 },
@@ -398,7 +398,10 @@ const CONFIG = {
     noEntregadaNps: 0     // NPS de paradas no entregadas por corte de jornada (0%)
   },
 
-  leaderboard: { maxEntries: 10 },
+  leaderboard: {
+    maxEntries: 10,
+    apiUrl: '' // Opcional: URL del Cloudflare Worker para Leaderboard compartido en GitHub Pages. Si está vacío, opera con localStorage.
+  },
 
   ui: { trasladoAnimMs: 2000, resumenDesvMs: 2500 }
 };
@@ -464,37 +467,87 @@ function npsParada(stayReal, stayPlan, rechazo, noEntregada){
 }
 
 /* =====================================================================
-   LEADERBOARD — localStorage
+   LEADERBOARD — localStorage + Cloudflare Worker API sync
    ===================================================================== */
 const LB_KEY = 'stLeaderboard';
-function cargarLeaderboard(){
+function getLocalLeaderboard(){
   try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; }
   catch(e){ return []; }
 }
 function guardarLeaderboard(entries){
-  localStorage.setItem(LB_KEY, JSON.stringify(entries));
+  try { localStorage.setItem(LB_KEY, JSON.stringify(entries)); } catch(e){}
 }
-function agregarPuntaje(entry){
-  const lb = cargarLeaderboard();
+async function fetchCloudLeaderboard(){
+  if (!CONFIG.leaderboard.apiUrl) return null;
+  try {
+    const res = await fetch(CONFIG.leaderboard.apiUrl.replace(/\/$/, '') + '/api/leaderboard', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data)){
+      guardarLeaderboard(data);
+      return data;
+    }
+  } catch(e){
+    // Fallback silencioso si no hay conexión o el worker no responde
+  }
+  return null;
+}
+
+function renderLeaderboard(containerId, highlightNombre){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+
+  const draw = (lb) => {
+    if (!lb || !lb.length){
+      el.innerHTML = '<div class="lb-empty">Aún no hay partidas registradas.</div>';
+      return;
+    }
+    const medallas = ['🥇','🥈','🥉'];
+    const filas = lb.map((e,i) => {
+      const hl = highlightNombre && e.nombre === highlightNombre && e._fresh ? ' class="lb-highlight"' : '';
+      return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left">${e.nombre}</td>` +
+        `<td>${Math.round(e.npsPromedio)}%</td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
+        `<td>$${e.costoTotal}</td><td>${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
+    }).join('');
+    el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>NPS (%)</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
+  };
+
+  // Render instantáneo local
+  const local = getLocalLeaderboard();
+  draw(local);
+
+  // Sincronización en la nube si hay API configurada
+  if (CONFIG.leaderboard.apiUrl){
+    fetchCloudLeaderboard().then(cloud => {
+      if (cloud) draw(cloud);
+    });
+  }
+}
+
+async function agregarPuntaje(entry){
+  const lb = getLocalLeaderboard();
   lb.push(entry);
   lb.sort((a,b) => b.npsPromedio - a.npsPromedio || a.costoTotal - b.costoTotal);
   const top = lb.slice(0, CONFIG.leaderboard.maxEntries);
   guardarLeaderboard(top);
+
+  if (CONFIG.leaderboard.apiUrl){
+    try {
+      fetch(CONFIG.leaderboard.apiUrl.replace(/\/$/, '') + '/api/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      }).then(r => r.json()).then(data => {
+        if (Array.isArray(data)){
+          guardarLeaderboard(data);
+          renderLeaderboard('lbResultados', G.nombreJugador);
+        }
+      }).catch(()=>{});
+    } catch(e){}
+  }
   return top;
-}
-function renderLeaderboard(containerId, highlightNombre){
-  const el = document.getElementById(containerId);
-  if(!el) return;
-  const lb = cargarLeaderboard();
-  if (!lb.length){ el.innerHTML = '<div class="lb-empty">Aún no hay partidas registradas.</div>'; return; }
-  const medallas = ['🥇','🥈','🥉'];
-  const filas = lb.map((e,i) => {
-    const hl = highlightNombre && e.nombre === highlightNombre && e._fresh ? ' class="lb-highlight"' : '';
-    return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left">${e.nombre}</td>` +
-      `<td>${Math.round(e.npsPromedio)}%</td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
-      `<td>$${e.costoTotal}</td><td>${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
-  }).join('');
-  el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>NPS (%)</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
 /* =====================================================================
@@ -1360,7 +1413,7 @@ function estadoResultados(){
   agregarPuntaje(entry);
   renderLeaderboard('lbResultados', G.nombreJugador);
   // Quitar el flag _fresh para que solo el recién guardado se resalte
-  const lb = cargarLeaderboard();
+  const lb = getLocalLeaderboard();
   lb.forEach(e => delete e._fresh);
   guardarLeaderboard(lb);
 

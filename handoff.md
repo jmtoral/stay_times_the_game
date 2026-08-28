@@ -137,11 +137,11 @@ Más opción **🎲 Aleatoria** (ruta + semilla al azar).
 
 ---
 
-## 9. REFACTOR PENDIENTE — lo que el jefe pidió
+## 9. REFACTOR IMPLEMENTADO — lo que el jefe pidió
 
-### Estado: ⏳ NO IMPLEMENTADO AÚN
+### Estado: ✅ IMPLEMENTADO
 
-Todas las decisiones de diseño están tomadas. Solo falta escribir el código.
+Todas las tareas descritas a continuación ya fueron codificadas e integradas en `index.html`.
 
 ### T1: Simplificar a un solo camión
 - **ELIMINAR**: `CONFIG.camiones.chico`, pantalla `SELECCION_CAMION`, estado `RETORNO_CEDIS`, contrafactual en resultados.

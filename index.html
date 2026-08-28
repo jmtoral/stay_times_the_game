@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Stay Time — Simulador de jornada de reparto</title>
+<title>Stay Time — Simulador de jornada de reparto | Coca‑Cola</title>
 
 <!-- Three.js: versión FIJA vía importmap ES module. En r160 three.module.js es
      autocontenido (no hay three.core.js). URL verificada 200 antes de fijarla. -->
@@ -17,19 +17,13 @@
 
 <style>
   :root{
-    /* Tema/branding con una paleta de rojos (red-50 … red-950).
-       Los colores FUNCIONALES (categorías del reloj + zonas del minijuego)
-       se mantienen distinguibles por legibilidad; sólo 'extra' y 'rojo' usan
-       el rojo de la paleta. */
+    /* Paleta roja corporativa Coca-Cola */
     --red-50:#ffe5e5; --red-100:#ffcccc; --red-200:#ff9999; --red-300:#ff6666;
     --red-400:#ff3333; --red-500:#ff0000; --red-600:#cc0000; --red-700:#990000;
     --red-800:#660000; --red-900:#330000; --red-950:#240000;
 
-    /* Tema CLARO: superficies claras con leve tinte cálido, texto oscuro, rojo
-       sólo como acento/branding para que contraste (no inunde la pantalla). */
     --bg:#f2ebeb; --panel:#ffffff; --panel2:#f7efef; --line:#e2d0d0;
     --txt:#2a1414; --muted:#8a6a6a; --accent:var(--red-600);
-    /* categorías del reloj de jornada (distintas entre sí, oscuras para leerse en claro) */
     --c-traslado:#d97706; --c-stay:#0d9488; --c-retorno:#7c3aed;
     --c-extra:var(--red-600); --c-cedis:#caa6a6;
     --verde:#16a34a; --amarillo:#ca8a04; --rojo:#dc2626;
@@ -41,7 +35,6 @@
     overflow:hidden; touch-action:manipulation; }
   #canvas3d{ position:fixed; inset:0; width:100%; height:100%; display:block; z-index:0; }
 
-  /* El HUD deja pasar el puntero salvo en elementos interactivos explícitos */
   #hudRoot{ position:fixed; inset:0; z-index:10; pointer-events:none; }
   .screen{ position:absolute; inset:0; display:none; flex-direction:column;
     pointer-events:auto; }
@@ -64,20 +57,22 @@
 
   /* ---------- MENU ---------- */
   #menu{ align-items:center; justify-content:center; text-align:center; padding:24px;
-    background:radial-gradient(1200px 600px at 50% -10%, #ffd9d9 0%, var(--bg) 60%); }
+    background:radial-gradient(1200px 600px at 50% -10%, #ffd9d9 0%, var(--bg) 60%); overflow:auto; }
   #menu .card{ max-width:560px; }
   #menu h1{ font-size:28px; }
   .obj{ text-align:left; margin:14px 0; color:var(--muted); font-size:14px; line-height:1.5; }
+  .coca-logo{ height:44px; margin-bottom:10px; display:block; margin-left:auto; margin-right:auto; }
+  .coca-logo-sm{ height:26px; vertical-align:middle; }
+  #nombreInput{ font:inherit; color:var(--txt); background:var(--panel2);
+    border:1px solid var(--line); border-radius:8px; padding:10px 12px;
+    min-height:44px; width:200px; text-align:center; }
+  #nombreInput:focus{ outline:2px solid var(--accent); }
 
-  /* ---------- SELECCION ---------- */
-  #seleccion{ padding:18px; overflow:auto; }
+  /* ---------- BRIEFING ---------- */
+  #briefing{ padding:18px; overflow:auto; }
   .infoRuta{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
   .chip{ background:var(--panel2); border:1px solid var(--line); border-radius:999px;
     padding:6px 12px; font-size:13px; }
-  .camiones{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media(max-width:640px){ .camiones{ grid-template-columns:1fr; } }
-  .camion h3{ font-size:18px; }
-  .camion ul{ margin:8px 0 14px; padding-left:18px; color:var(--muted); font-size:13px; line-height:1.6; }
   .warnTxt{ color:var(--warn); }
 
   /* ---------- HUD juego ---------- */
@@ -103,6 +98,9 @@
   .kv b{ font-variant-numeric:tabular-nums; }
   #etqDificultad{ margin-top:8px; font-size:11px; color:var(--warn); min-height:14px; }
 
+  /* NPS en vivo en el panel */
+  #npsVivo{ margin-top:6px; font-size:20px; text-align:center; min-height:28px; }
+
   /* toasts / avisos */
   #avisos{ position:absolute; top:96px; right:12px; width:min(300px,54vw);
     display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
@@ -111,16 +109,16 @@
   .toast.bad{ background:#ffe9e9; border-color:var(--red-400); color:#7a0000; }
   .toast.ok{ background:#dcfce7; border-color:#16a34a; color:#14532d; }
 
-  /* resumen desviación 2s */
+  /* resumen desviación 2s — ahora incluye NPS emoji */
   #resumenDesv{ position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
     background:#ffffffee; box-shadow:0 8px 30px #0000002a; border:1px solid var(--line); border-radius:14px; padding:18px 22px;
     text-align:center; display:none; }
   #resumenDesv.on{ display:block; }
   #resumenDesv .big{ font-size:22px; font-weight:800; }
+  .nps-emoji{ font-size:48px; line-height:1; }
+  .nps-label{ font-size:14px; font-weight:700; margin-top:4px; }
 
-  /* ---------- MINIJUEGO (anclado abajo del todo) ----------
-     Fondo TRANSPARENTE: no tapa ni lava el camión, para que se aprecie cómo se
-     descargan las cajas mientras juegas. La barra/botón traen su propio fondo. */
+  /* ---------- MINIJUEGO (anclado abajo del todo) ---------- */
   #minijuego{ position:absolute; left:0; right:0; bottom:0;
     padding:8px 12px calc(8px + env(safe-area-inset-bottom));
     justify-content:flex-end; background:none; }
@@ -149,6 +147,15 @@
   .pos{ color:var(--ok); } .neg{ color:var(--bad); } .zero{ color:var(--muted); }
   .consejo{ border-left:4px solid var(--accent); padding-left:12px; }
   .sub{ font-size:12px; color:var(--muted); }
+
+  /* ---------- LEADERBOARD ---------- */
+  #leaderboardSection{ margin-top:16px; text-align:left; }
+  .lb-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .lb-table th,.lb-table td{ border:1px solid var(--line); padding:5px 7px; text-align:center; }
+  .lb-table th{ background:var(--panel2); color:var(--muted); font-weight:600; font-size:11px; }
+  .lb-table td:first-child{ text-align:center; font-weight:700; }
+  .lb-highlight{ background:#fff8e1 !important; }
+  .lb-empty{ color:var(--muted); font-style:italic; text-align:center; padding:12px; font-size:13px; }
 </style>
 </head>
 <body>
@@ -159,16 +166,22 @@
   <!-- ============ MENU ============ -->
   <div class="screen on" id="menu">
     <div class="card">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
+           alt="Coca‑Cola" class="coca-logo"
+           onerror="this.outerHTML='<div style=color:var(--red-600);font-size:28px;font-weight:800;font-style:italic;margin-bottom:10px>Coca‑Cola</div>'">
       <h1>Stay Time</h1>
       <div class="muted">Simulador de jornada de reparto · Operaciones</div>
       <div class="obj">
         <b>Qué vas a decidir y ejecutar:</b><br>
-        1. Elegir la flota para la ruta del día.<br>
-        2. Descargar con precisión (el timing cambia cuánto tardas, no cuánto bajas).<br>
-        3. Cerrar la jornada dentro del presupuesto de 8 horas (07:00 → 15:00).<br><br>
+        1. Descargar con precisión (el timing cambia cuánto tardas, no cuánto bajas).<br>
+        2. Cerrar la jornada dentro del presupuesto de 8 horas (07:00 → 15:00).<br>
+        3. Mantener la satisfacción del cliente: si te tardas, el NPS baja.<br><br>
         El Stay Time es costo fijo de estacionamiento + atención al cliente (que la
-        habilidad NO acelera) + descarga variable. La decisión de flota puede condenar
-        la jornada antes de bajar la primera caja.
+        habilidad NO acelera) + descarga variable. ¡Que no se te acabe el tiempo!
+      </div>
+      <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:10px; flex-wrap:wrap">
+        <label class="muted" for="nombreInput">Tu nombre:</label>
+        <input id="nombreInput" class="interactivo" placeholder="Ej: Juan Pérez" maxlength="20">
       </div>
       <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:14px; flex-wrap:wrap">
         <label class="muted" for="selRuta">Ruta:</label>
@@ -177,19 +190,27 @@
       </div>
       <div class="sub" id="selRutaDesc" style="margin-bottom:14px">&nbsp;</div>
       <button class="primary interactivo" id="btnEmpezar">Empezar jornada</button>
+
+      <div id="leaderboardSection">
+        <h3 style="margin-top:16px">🏆 Leaderboard</h3>
+        <div id="lbMenu"></div>
+      </div>
     </div>
   </div>
 
-  <!-- ============ SELECCION CAMION ============ -->
-  <div class="screen" id="seleccion">
-    <h2>Fase 1 · Selección de camión</h2>
-    <div class="muted" style="margin-bottom:10px">Decide informado: estos son los datos de la ruta de hoy.</div>
+  <!-- ============ BRIEFING DE RUTA ============ -->
+  <div class="screen" id="briefing">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
+           alt="Coca‑Cola" class="coca-logo-sm"
+           onerror="this.style.display='none'">
+      <h2 style="margin:0">Briefing de ruta</h2>
+    </div>
+    <div class="muted" style="margin-bottom:10px">Revisa los datos de la ruta antes de salir. Tienes 8 horas (07:00 → 15:00).</div>
     <div class="infoRuta" id="infoRuta"></div>
     <div class="card" id="listaParadas" style="margin:0 0 14px;padding:12px"></div>
-    <div class="camiones">
-      <div class="card camion" id="cardChico"></div>
-      <div class="card camion" id="cardGrande"></div>
-    </div>
+    <div class="card" id="infoCamion" style="margin:0 0 14px;padding:12px"></div>
+    <button class="primary interactivo" id="btnIniciarRuta" style="align-self:center;min-width:200px">🚚 Iniciar ruta</button>
   </div>
 
   <!-- ============ HUD DURANTE EL JUEGO ============ -->
@@ -207,19 +228,19 @@
         <span><i style="background:var(--c-cedis)"></i>CEDIS</span>
         <span><i style="background:var(--c-traslado)"></i>Traslado</span>
         <span><i style="background:var(--c-stay)"></i>Stay Time</span>
-        <span><i style="background:var(--c-retorno)"></i>Retorno CEDIS</span>
         <span><i style="background:var(--c-extra)"></i>Tiempo extra</span>
       </div>
     </div>
 
     <div id="panelParada">
-      <h3 id="ppTitulo">Parada 1 de 7</h3>
+      <h3 id="ppTitulo">Parada 1 de 5</h3>
       <div class="kv"><span class="muted">Llegada planeada</span><b id="ppPlanLleg">—</b></div>
       <div class="kv"><span class="muted">Llegada real</span><b id="ppRealLleg">—</b></div>
       <div class="kv"><span class="muted">Atraso acumulado</span><b id="ppAtraso">—</b></div>
       <hr style="border-color:var(--line)">
       <div class="kv"><span class="muted">Stay Time planeado</span><b id="ppStayPlan">—</b></div>
       <div class="kv"><span class="muted">Stay Time real (vivo)</span><b id="ppStayReal">—</b></div>
+      <div id="npsVivo"></div>
       <div id="etqDificultad"></div>
     </div>
 
@@ -227,6 +248,8 @@
 
     <div id="resumenDesv">
       <div class="muted">Saliendo de la parada</div>
+      <div class="nps-emoji" id="rdEmoji"></div>
+      <div class="nps-label" id="rdNpsLabel"></div>
       <div class="big" id="rdTitulo">—</div>
       <div id="rdDetalle" class="sub"></div>
     </div>
@@ -255,131 +278,103 @@
 import * as THREE from 'three';
 
 /* =====================================================================
-   CONFIG — TODAS las constantes tuneables viven aquí. Ningún número mágico
-   fuera de este objeto (los únicos literales en el código son índices y 0/1).
+   CONFIG — TODAS las constantes tuneables. Ningún número mágico fuera.
    ===================================================================== */
 const CONFIG = {
-  seed: 12345,                       // semilla del RNG (demos reproducibles)
+  seed: 12345,
 
   jornada: {
-    inicioMin: 7*60,                 // 07:00 = 420
-    presupuestoMin: 480,             // 8 h; excederlo cuesta
-    limiteRojoMin: 15*60,            // 15:00 = 900 → zona roja, empieza tiempo extra
-    corteDuroMin: 17*60,             // 17:00 = 1020 → ruta truncada
-    spanBarraMin: 10*60              // la barra representa 07:00→17:00 (600 min)
+    inicioMin: 7*60,              // 07:00 = 420
+    presupuestoMin: 480,          // 8 h
+    corteDuroMin: 15*60,          // 15:00 = 900 → ruta truncada, paradas restantes NO ENTREGADAS
+    spanBarraMin: 540             // barra muestra 07:00→16:00 (espacio visual para rebase)
   },
 
-  // Bloques fijos que NO son Stay Time (van en su propia categoría)
   bloques: {
     cargaCEDIS: 35,
     liquidacionFinal: 25,
-    trasladoPorTramo: 17,            // tramos: CEDIS→P1, entre paradas, Pn→CEDIS
-    atencionCliente: 12,            // Stay Time que la habilidad NO acelera
-    // Bloque de retorno a CEDIS (25 traslado + 15 recarga/andén + 25 regreso).
-    // ADICIONAL al traslado normal. No es Stay Time. Se dispara cuando la carga
-    // del camión no alcanza para la siguiente parada.
-    retornoCEDIS: 65
+    trasladoPorTramo: 25,         // default; cada ruta puede sobreescribirlo
+    atencionCliente: 15           // Stay Time que la habilidad NO acelera
   },
 
-  cajasPorManiobra: 20,             // maniobras por parada = ceil(cajas/20)
+  cajasPorManiobra: 20,
 
-  // Catálogo de rutas (editable). La CANÓNICA es la de referencia y produce los
-  // números del spec (468/496/465). Las demás dan variedad; el retorno del chico
-  // se dispara dinámicamente según su capacidad (280) vs las cajas de la ruta.
-  // canal: 'tradicional' = tiendita (Canal Tradicional); 'moderno' = supermercado
-  // (Canal Moderno). `nombres` y `canal` son paralelos a `cajas`.
+  /* Catálogo de rutas. trasladoPorTramo es opcional por ruta (fallback a bloques).
+     DISEÑO DE TENSIÓN (canónica, 5 paradas):
+     - Perfecto:  451 min → cierra 14:31, 29 min de margen.
+     - Mediocre (avg amarillo): ~487 min → 7 min de rebase, última parada en riesgo.
+     - Malo (avg rojo): ~535 min → pierde 1-2 paradas. */
   rutas: {
     canonica: {
-      nombre:'Estándar (demo · 7 paradas, 500 cajas)',
-      cajas:        [80, 60, 100, 40, 90, 70, 60],   // suma 500
-      zonaEstrecha: [false, true, false, false, true, false, false], // P2 y P5
-      ventanaCierre:[null, null, "10:15", null, "12:30", null, "14:30"], // P3, P5, P7
-      nombres: ["Abarrotes Doña Mari","Súper La Comercial","Tienda El Ahorro","Minisúper San José","Supermercado Del Valle","Abarrotes El Sol","Súper Express Reforma"],
-      canal:   ["tradicional","moderno","tradicional","tradicional","moderno","tradicional","moderno"]
+      nombre:'Ruta estándar (5 paradas, 480 cajas)',
+      cajas:        [100, 80, 120, 80, 100],
+      zonaEstrecha: [false, true, false, false, true],
+      ventanaCierre:[null, null, "10:45", null, "13:30"],
+      nombres: ["Abarrotes Doña Mari","Súper La Comercial","Tienda El Ahorro","Minisúper San José","Supermercado Del Valle"],
+      canal:   ["tradicional","moderno","tradicional","tradicional","moderno"]
     },
     express: {
-      nombre:'Express centro (5 paradas, ventanas apretadas)',
-      cajas:        [70, 50, 60, 90, 60],            // suma 330
-      zonaEstrecha: [true, false, true, false, true],
-      ventanaCierre:[null, "09:40", null, "11:30", "12:45"],
-      nombres: ["Tiendita La Esquina","Súper Centro","Abarrotes Lupita","Supermercado Plaza","Súper 24 Reforma"],
-      canal:   ["tradicional","moderno","tradicional","moderno","moderno"]
+      nombre:'Express centro (3 paradas, rápida)',
+      trasladoPorTramo: 20,
+      cajas:        [80, 100, 80],
+      zonaEstrecha: [true, false, true],
+      ventanaCierre:[null, "10:00", null],
+      nombres: ["Tiendita La Esquina","Súper Centro","Abarrotes Lupita"],
+      canal:   ["tradicional","moderno","tradicional"]
     },
     pesada: {
-      nombre:'Ruta pesada (10 paradas, 700 cajas)',
-      cajas:        [80, 60, 100, 40, 90, 70, 60, 50, 80, 70], // suma 700
-      zonaEstrecha: [false, false, false, false, false, false, false, false, true, false],
-      ventanaCierre:[null, null, "10:00", null, null, "12:30", null, null, "14:00", null],
-      nombres: ["Abarrotes Don Beto","Súper Mega","Tienda La Fe","Minisúper Aztlán","Supermercado Norte","Abarrotes María","Súper Ahorro","Tiendita El Puente","Hiper Central","Abarrotes La Loma"],
-      canal:   ["tradicional","moderno","tradicional","tradicional","moderno","tradicional","moderno","tradicional","moderno","tradicional"]
-    },
-    ligera: {
-      nombre:'Ruta ligera (3 paradas, 200 cajas)',
-      cajas:        [80, 60, 60],                    // suma 200
-      zonaEstrecha: [true, false, true],
-      ventanaCierre:[null, null, null],
-      nombres: ["Abarrotes Chila","Súper Barrio","Tiendita Rosa"],
-      canal:   ["tradicional","moderno","tradicional"]
+      nombre:'Ruta pesada (7 paradas, desafiante)',
+      trasladoPorTramo: 15,
+      cajas:        [80, 60, 100, 40, 80, 60, 80],
+      zonaEstrecha: [false, true, false, false, true, false, true],
+      ventanaCierre:[null, null, "10:00", null, "12:00", null, "14:00"],
+      nombres: ["Abarrotes Don Beto","Súper Mega","Tienda La Fe","Minisúper Aztlán","Supermercado Norte","Abarrotes María","Hiper Central"],
+      canal:   ["tradicional","moderno","tradicional","tradicional","moderno","tradicional","moderno"]
     }
   },
   rutaDefault:'canonica',
 
-  // Camiones. El plan del planeador asume implícitamente el grande (estac. 6).
-  // El retorno a CEDIS ya no es fijo por camión: se calcula según capacidad.
-  camiones: {
-    chico: {
-      id:'chico', nombre:'Camión chico', capacidad:280,
-      estacionamiento:3, penalizacionEstrecha:0
-    },
-    grande: {
-      id:'grande', nombre:'Camión grande', capacidad:550,
-      estacionamiento:6, penalizacionEstrecha:8    // +8 SOLO en zona estrecha
-    }
+  // Camión ÚNICO (sin selección). Stats del "grande" original.
+  camion: {
+    nombre:'Camión de reparto', capacidad:550,
+    estacionamiento:6, penalizacionEstrecha:8
   },
 
   // Minijuego de descarga (precisión, no velocidad)
   mj: {
-    cicloBase: 1.6,                 // s por ciclo completo de la aguja (delta-time)
-    zonaVerde: 0.18,                // ancho relativo zona verde base
-    zonaVerdeEstrecha: 0.12,        // en paradas con zonaEstrecha
-    zonaVerdeUltima: 0.22,          // última maniobra de cada parada (el remate)
-    zonaAmarilla: 0.16,             // a CADA lado de la verde
-    aceleracionPorManiobra: 0.08,   // +8% desde la 3ª maniobra en paradas de ≥5
-    umbralManiobrasAcelera: 5,      // “5 o más maniobras”
-    tVerde: 5.0, tAmarillo: 6.5, tRojo: 8.5, // min por maniobra según acierto
-    resolverMs: 700                 // input bloqueado mientras se resuelve la maniobra
+    cicloBase: 1.6,
+    zonaVerde: 0.18,
+    zonaVerdeEstrecha: 0.12,
+    zonaVerdeUltima: 0.22,
+    zonaAmarilla: 0.16,
+    aceleracionPorManiobra: 0.08,
+    umbralManiobrasAcelera: 5,
+    tVerde: 5.0, tAmarillo: 6.5, tRojo: 8.5,
+    resolverMs: 700
   },
 
-  // Plan teórico del planeador (documento fijo, calculado UNA vez)
+  // Plan teórico del planeador (documento fijo)
   plan: { estacionamientoEstandar: 6, minPorManiobra: 5.5 },
 
   // Evento aleatorio
   evento: { probabilidad: 0.25, extraMin: 5 },
 
-  // Geocerca: por azar el camión se estaciona FUERA del punto autorizado. Caso
-  // anómalo pero garantizado al menos una vez por ruta. NO suma minutos fijos:
-  // sólo endurece el minijuego (zona verde más angosta y aguja más rápida), así
-  // que un jugador perfecto sigue clavando la verde y los totales de referencia
-  // (468/496/465) no cambian.
+  // Geocerca
   geocerca: {
-    probabilidad: 0.15,          // azar por parada
-    forzarAlMenosUna: true,      // garantiza ≥1 por ruta
-    factorZonaVerde: 0.65,       // multiplica el ancho verde (~35% más angosto)
-    factorVelocidadAguja: 1.25   // acelera la aguja (~25%)
+    probabilidad: 0.15,
+    forzarAlMenosUna: true,
+    factorZonaVerde: 0.65,
+    factorVelocidadAguja: 1.25
   },
 
-  // Ventanas de recepción
   ventana: { gestionRechazoMin: 8 },
 
-  // Costos (placeholders a calibrar por el usuario)
   costos: {
     costoMinutoExtra: 4.5,
     costoRechazo: 850,
-    costoCajaNoEntregada: 12,
-    costoRetornoCEDIS: 300
+    costoCajaNoEntregada: 12
   },
 
-  // Calificación en estrellas sobre el costo total del turno (umbrales explícitos)
   estrellas: [
     { maxCosto: 50,   estrellas: 5 },
     { maxCosto: 250,  estrellas: 4 },
@@ -388,15 +383,28 @@ const CONFIG = {
     { maxCosto: Infinity, estrellas: 1 }
   ],
 
-  ui: { trasladoAnimMs: 2000, resumenDesvMs: 2000 }
+  // NPS del cliente: calificación por parada según desviación vs plan.
+  // desviación = stay time real − stay time planeado.
+  nps: {
+    umbrales: [
+      { maxDesvMin: 0,          emoji:'😍', nps:10, label:'Encantado' },
+      { maxDesvMin: 3,          emoji:'😊', nps:9,  label:'Muy satisfecho' },
+      { maxDesvMin: 8,          emoji:'🙂', nps:7,  label:'Satisfecho' },
+      { maxDesvMin: 15,         emoji:'😐', nps:5,  label:'Neutral' },
+      { maxDesvMin: 25,         emoji:'😠', nps:3,  label:'Insatisfecho' },
+      { maxDesvMin: Infinity,   emoji:'🤬', nps:1,  label:'Furioso' }
+    ],
+    rechazoNps: 0,       // NPS de paradas rechazadas por ventana
+    noEntregadaNps: 0     // NPS de paradas no entregadas (corte de jornada)
+  },
+
+  leaderboard: { maxEntries: 10 },
+
+  ui: { trasladoAnimMs: 2000, resumenDesvMs: 2500 }
 };
 
-/* Las rutas alternas ya son seleccionables desde el menú (CONFIG.rutas).
-   Para añadir una nueva, basta con agregarla a CONFIG.rutas: aparecerá sola en
-   el selector y toda la lógica (maniobras, ventanas, retornos) se adapta. */
-
 /* =====================================================================
-   RNG con semilla (mulberry32) — para eventos reproducibles por semilla.
+   RNG con semilla (mulberry32)
    ===================================================================== */
 function mulberry32(a){
   return function(){
@@ -407,11 +415,10 @@ function mulberry32(a){
   };
 }
 
-/* ---- Ruta activa (mutable): se selecciona en el menú. `num` y `ventanaMin`
-   se recalculan cada vez que cambia la ruta. ---- */
+/* ---- Ruta activa ---- */
 let RUTA = CONFIG.rutas[CONFIG.rutaDefault];
-let num = [];         // maniobras por parada = ceil(cajas/20)
-let ventanaMin = [];  // ventanas de cierre en minutos desde medianoche
+let num = [];
+let ventanaMin = [];
 function aplicarRuta(key){
   RUTA = CONFIG.rutas[key];
   num = RUTA.cajas.map(c => Math.ceil(c / CONFIG.cajasPorManiobra));
@@ -419,22 +426,10 @@ function aplicarRuta(key){
 }
 aplicarRuta(CONFIG.rutaDefault);
 
-// Índices de parada TRAS los cuales el camión debe volver a CEDIS a recargar,
-// porque su carga restante no alcanza para la siguiente parada. Devuelve [] si
-// la capacidad cubre toda la ruta de una sola vuelta.
-function calcularRetornos(camion, cajas){
-  const total = cajas.reduce((a,b)=>a+b, 0);
-  if (camion.capacidad >= total) return [];
-  const idx = [];
-  let carga = camion.capacidad;
-  for (let i=0;i<cajas.length;i++){
-    carga -= cajas[i];
-    if (i < cajas.length-1 && carga < cajas[i+1]){ idx.push(i); carga = camion.capacidad; }
-  }
-  return idx;
-}
+// Traslado por tramo: usa el de la ruta si existe, si no el default
+function trasladoTramo(){ return RUTA.trasladoPorTramo || CONFIG.bloques.trasladoPorTramo; }
 
-/* ---- Helpers de tiempo (minutos desde medianoche → "HH:MM") ---- */
+/* ---- Helpers de tiempo ---- */
 function hhmm(min){
   min = Math.round(min);
   const h = Math.floor(min/60), m = ((min%60)+60)%60;
@@ -442,11 +437,10 @@ function hhmm(min){
 }
 function firma(min){ const s = Math.round(min); return (s>0?'+':'') + s; }
 
-/* ---- Helpers de canal de venta (tiendita/supermercado) ---- */
+/* ---- Helpers de canal de venta ---- */
 function nombreParada(i){ return (RUTA.nombres && RUTA.nombres[i]) || `Parada ${i+1}`; }
 function canalDe(i){ return (RUTA.canal && RUTA.canal[i]) || 'tradicional'; }
 function canalLabel(i){ return canalDe(i) === 'moderno' ? 'Canal Moderno' : 'Canal Tradicional'; }
-// Etiqueta HTML con color por canal (Moderno = acento; Tradicional = neutro).
 function canalBadge(i){
   const moderno = canalDe(i) === 'moderno';
   const bg = moderno ? 'var(--accent)' : '#8a6a6a';
@@ -455,32 +449,67 @@ function canalBadge(i){
 }
 
 /* =====================================================================
-   MODELO DE CÁLCULO — impleméntalo tal cual (SPEC).
-
-   NÚMEROS DE REFERENCIA (juego perfecto = toda maniobra en zona verde = 5.0 min),
-   verificados contra este mismo código en motor JS:
-     · Camión GRANDE perfecto: 468 min, cierra 14:48, 0 min de tiempo extra.
-     · Camión CHICO  perfecto: 496 min, cierra 15:16, 16 min de tiempo extra.
-       → La ruta por defecto CONDENA al camión chico aunque el jugador sea impecable.
-     · PLAN del planeador:     465 min, cierra 14:45 (asume grande, ignora estrechas).
-       → Ni el grande perfecto lo alcanza: queda 3 min por detrás.
-     · Camión chico perfecto llega a la parada 5 a las 12:15 (ventana 12:30):
-       15 min de margen; cualquier error previo provoca rechazo.
+   NPS — calificación del cliente por parada
    ===================================================================== */
+function calcNps(desvMin){
+  for (const u of CONFIG.nps.umbrales)
+    if (desvMin <= u.maxDesvMin) return u;
+  return CONFIG.nps.umbrales[CONFIG.nps.umbrales.length-1];
+}
+// NPS para una parada dada su desviación. Rechazos y no entregadas → NPS 0.
+function npsParada(stayReal, stayPlan, rechazo, noEntregada){
+  if (rechazo || noEntregada) return { emoji:'🤬', nps:0, label:'No entregado' };
+  const desv = stayReal - stayPlan;
+  return calcNps(desv);
+}
 
-// Stay Time de una parada. Si hay rechazo por ventana, se colapsa a
-// estacionamiento + gestión (las cajas no se descargan).
+/* =====================================================================
+   LEADERBOARD — localStorage
+   ===================================================================== */
+const LB_KEY = 'stLeaderboard';
+function cargarLeaderboard(){
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; }
+  catch(e){ return []; }
+}
+function guardarLeaderboard(entries){
+  localStorage.setItem(LB_KEY, JSON.stringify(entries));
+}
+function agregarPuntaje(entry){
+  const lb = cargarLeaderboard();
+  lb.push(entry);
+  lb.sort((a,b) => b.npsPromedio - a.npsPromedio || a.costoTotal - b.costoTotal);
+  const top = lb.slice(0, CONFIG.leaderboard.maxEntries);
+  guardarLeaderboard(top);
+  return top;
+}
+function renderLeaderboard(containerId, highlightNombre){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const lb = cargarLeaderboard();
+  if (!lb.length){ el.innerHTML = '<div class="lb-empty">Aún no hay partidas registradas.</div>'; return; }
+  const medallas = ['🥇','🥈','🥉'];
+  const filas = lb.map((e,i) => {
+    const hl = highlightNombre && e.nombre === highlightNombre && e._fresh ? ' class="lb-highlight"' : '';
+    return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left">${e.nombre}</td>` +
+      `<td>${e.npsPromedio.toFixed(1)}</td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
+      `<td>$${e.costoTotal}</td><td>${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
+  }).join('');
+  el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>NPS</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
+/* =====================================================================
+   MODELO DE CÁLCULO
+   ===================================================================== */
 function stayTimeParada(camion, i, maniTimes, eventoActivo, rechazo){
   if (rechazo) return camion.estacionamiento + CONFIG.ventana.gestionRechazoMin;
   let t = camion.estacionamiento;
   if (RUTA.zonaEstrecha[i]) t += camion.penalizacionEstrecha;
-  t += CONFIG.bloques.atencionCliente;                 // 12 min, no acelerable
-  t += maniTimes.reduce((a,b)=>a+b, 0);                // descarga variable
-  if (eventoActivo) t += CONFIG.evento.extraMin;       // +5 min
+  t += CONFIG.bloques.atencionCliente;
+  t += maniTimes.reduce((a,b)=>a+b, 0);
+  if (eventoActivo) t += CONFIG.evento.extraMin;
   return t;
 }
 
-// Desglose por concepto (para la pantalla de resultados)
 function desgloseParada(camion, i, maniTimes, eventoActivo, rechazo){
   if (rechazo){
     return { estac:camion.estacionamiento, penal:0, atencion:0, descarga:0, evento:0,
@@ -496,38 +525,34 @@ function desgloseParada(camion, i, maniTimes, eventoActivo, rechazo){
   };
 }
 
-// PLAN teórico del planeador. Se calcula UNA sola vez, con parámetros estándar:
-// asume implícitamente el camión grande (estac. 6) e ignora zonas estrechas.
 function calcularPlan(){
   const B = CONFIG.bloques, J = CONFIG.jornada, P = CONFIG.plan;
+  const tramo = trasladoTramo();
   let reloj = J.inicioMin + B.cargaCEDIS;
   const llegada = [], stay = [];
   for (let i=0;i<num.length;i++){
-    reloj += B.trasladoPorTramo;
+    reloj += tramo;
     llegada.push(reloj);
     const st = B.atencionCliente + P.estacionamientoEstandar + num[i]*P.minPorManiobra;
     stay.push(st);
     reloj += st;
   }
-  reloj += B.trasladoPorTramo;      // P7 → CEDIS (8º tramo)
+  reloj += tramo;
   reloj += B.liquidacionFinal;
   return { llegada, stay, total: reloj - J.inicioMin, cierre: reloj };
 }
 
-// Simulación completa de la jornada dada la ejecución (maniobras) y los eventos.
-// Fuente de verdad para números finales y contrafactual. Determinista.
 function simularJornada(camion, maniPorParada, eventos){
   const B = CONFIG.bloques, J = CONFIG.jornada;
-  const retornos = calcularRetornos(camion, RUTA.cajas);  // índices tras los que recarga
+  const tramo = trasladoTramo();
   let reloj = J.inicioMin + B.cargaCEDIS;
   const paradas = [];
   let truncado = false;
 
   for (let i=0;i<num.length;i++){
-    reloj += B.trasladoPorTramo;
+    reloj += tramo;
     const llegada = reloj;
 
-    // Corte duro a las 17:00: la ruta se trunca, restantes NO ENTREGADAS.
     if (llegada >= J.corteDuroMin) truncado = true;
     if (truncado){
       paradas.push({ i, llegada, noEntregada:true, rechazo:false, stay:0,
@@ -541,24 +566,20 @@ function simularJornada(camion, maniPorParada, eventos){
     const desg = desgloseParada(camion, i, maniTimes, eventos[i], rechazo);
     reloj += stay;
     paradas.push({ i, llegada, noEntregada:false, rechazo, stay, desglose:desg, maniTimes });
-
-    if (retornos.includes(i)) reloj += B.retornoCEDIS;
   }
 
   if (!truncado){
-    reloj += B.trasladoPorTramo;        // Pn → CEDIS
+    reloj += tramo;
     reloj += B.liquidacionFinal;
   }
   const total = reloj - J.inicioMin;
   return {
     paradas, total, cierre: reloj,
     tiempoExtra: Math.max(0, total - J.presupuestoMin),
-    retornos: retornos.length,
     truncado
   };
 }
 
-// Costo total del turno, desglosado por concepto.
 function calcularCostos(camion, sim){
   const C = CONFIG.costos;
   let rechazos=0, cajasPerdidas=0;
@@ -571,9 +592,8 @@ function calcularCostos(camion, sim){
   const extra = sim.tiempoExtra * C.costoMinutoExtra;
   const cRechazo = rechazos * C.costoRechazo;
   const cCajas = cajasPerdidas * C.costoCajaNoEntregada;
-  const cRetorno = sim.retornos * C.costoRetornoCEDIS;
-  const total = extra + cRechazo + cCajas + cRetorno;
-  return { extra, cRechazo, cCajas, cRetorno, total, rechazos, cajasPerdidas };
+  const total = extra + cRechazo + cCajas;
+  return { extra, cRechazo, cCajas, total, rechazos, cajasPerdidas };
 }
 
 function estrellasPara(costoTotal){
@@ -589,34 +609,33 @@ const G = {
   rng:null,
   rutaKey: CONFIG.rutaDefault,
   seedActual: CONFIG.seed,
-  camion:null, otroCamion:null,
-  retornos:[],                // índices de parada tras los que el camión recarga
+  camion: CONFIG.camion,
   plan:null,
-  eventos:[],                 // bool por parada (pre-rodados con RNG)
-  geocercas:[],               // bool por parada: camión fuera de geocerca (anomalía)
-  maniobras:[],               // tiempos reales por parada [[..],[..],...]
+  eventos:[],
+  geocercas:[],
+  maniobras:[],
   paradaIdx:0,
   reloj: CONFIG.jornada.inicioMin,
-  elapsed:0,                  // minutos transcurridos desde inicio (para la barra)
-  segmentos:[],               // segmentos de la barra {cat, min}
-  llegadaReal:[],             // hora real de llegada por parada
-  rechazoReal:[],             // bool por parada
-  // runtime minijuego
+  elapsed:0,
+  segmentos:[],
+  llegadaReal:[],
+  rechazoReal:[],
+  npsReal:[],           // {emoji, nps, label} por parada
+  nombreJugador:'',
   mj:null
 };
 
 /* =====================================================================
-   THREE.JS — escena procedural, cámara isométrica fija (< 5000 triángulos).
+   THREE.JS — escena procedural, cámara isométrica fija
    ===================================================================== */
 const canvas = document.getElementById('canvas3d');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // limitado a 2
-// Paleta de rojos para el 3D (misma que el CSS).
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 const RED = { 50:0xffe5e5,100:0xffcccc,200:0xff9999,300:0xff6666,400:0xff3333,
   500:0xff0000,600:0xcc0000,700:0x990000,800:0x660000,900:0x330000,950:0x240000 };
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xefe7e7);   // fondo claro cálido, para contraste
+scene.background = new THREE.Color(0xefe7e7);
 scene.fog = new THREE.Fog(0xefe7e7, 24, 52);
 
 let camera;
@@ -624,7 +643,7 @@ function setupCamera(){
   const aspect = window.innerWidth / Math.max(1, window.innerHeight);
   const d = 9;
   camera = new THREE.OrthographicCamera(-d*aspect, d*aspect, d, -d, 0.1, 100);
-  camera.position.set(14, 13, 14);         // vista isométrica fija (sin órbita)
+  camera.position.set(14, 13, 14);
   camera.lookAt(0, 0.5, 0);
 }
 setupCamera();
@@ -635,7 +654,6 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.15);
 sun.position.set(10, 16, 6);
 scene.add(sun);
 
-// Suelo y carretera (tonos claros)
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(80, 80),
   new THREE.MeshStandardMaterial({ color:0xe0d6d6, roughness:1 }));
@@ -647,7 +665,6 @@ const road = new THREE.Mesh(
 road.position.set(0, 0.03, 3.2);
 scene.add(road);
 
-// Edificios de fondo (procedurales, gris cálido claro)
 function edificio(x,z,w,h,d,color){
   const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
     new THREE.MeshStandardMaterial({ color, roughness:.9 }));
@@ -656,7 +673,6 @@ function edificio(x,z,w,h,d,color){
 }
 for (let i=0;i<11;i++) edificio(-14 + i*3, -4.2, 2.2, 1.6+((i*7)%3)*0.8, 2.2, 0xcdbcbc);
 
-// Camión rojo (grupo procedural) — contrasta sobre el fondo claro
 const truck = new THREE.Group();
 const cabina = new THREE.Mesh(new THREE.BoxGeometry(1.4,1.3,1.8),
   new THREE.MeshStandardMaterial({ color:RED[700] }));
@@ -671,12 +687,10 @@ for (const [x,z] of [[1.4,1],[1.4,-1],[-1.4,1],[-1.4,-1]]){
   w.rotation.x = Math.PI/2; w.position.set(x, 0.4, z);
   truck.add(w);
 }
-const STOP_X = 0, OFF_DER = 22, OFF_IZQ = -22;  // posiciones para la animación de traslado
+const STOP_X = 0, OFF_DER = 22, OFF_IZQ = -22;
 truck.position.set(STOP_X, 0, 2);
 scene.add(truck);
 
-// Edificio de DESTINO: cambia de forma, color y posición en cada parada, para que
-// se sienta que el camión llega a un LUGAR DISTINTO. Un solo mesh reutilizado.
 const destino = new THREE.Mesh(new THREE.BoxGeometry(2.4,3,2.4),
   new THREE.MeshStandardMaterial({ color:RED[600], roughness:.9 }));
 scene.add(destino);
@@ -696,30 +710,28 @@ function configurarDestino(spec){
     cajasGroup.visible = false;
     return;
   }
-  const i = spec.i;                          // varía de forma determinista por parada
-  const moderno = spec.canal === 'moderno';  // supermercado = nave ancha; tiendita = local chico
+  const i = spec.i;
+  const moderno = spec.canal === 'moderno';
   const h = moderno ? (3.0 + ((i*37) % 3) * 0.7) : (2.0 + ((i*29) % 2) * 0.6);
   const w = moderno ? (3.4 + ((i*17) % 2) * 0.8) : (1.8 + ((i*13) % 2) * 0.4);
-  const d = moderno ? 3.0 : 2.2;
+  const dd = moderno ? 3.0 : 2.2;
   destino.geometry.dispose();
-  destino.geometry = new THREE.BoxGeometry(w, h, d);
+  destino.geometry = new THREE.BoxGeometry(w, h, dd);
   destino.position.set(2.6 + (moderno?0.3:0), h/2, -1.4 + ((i*53) % 3) * 0.5);
   destino.material.color.setHex(paletaDestino[i % paletaDestino.length]);
-  // Marquesina más ancha y clara en Canal Moderno.
   marquesina.scale.set(moderno ? 1.5 : 0.9, 1, moderno ? 1.4 : 1);
   marquesina.material.color.setHex(moderno ? RED[300] : RED[600]);
   marquesina.position.set(2.6 + (moderno?0.3:0), h + 0.1, 0.2);
   cajasGroup.visible = true;
 }
 
-// Pila de cajas (se reduce por maniobra), junto a la caja del camión
 const cajasGroup = new THREE.Group();
 cajasGroup.position.set(-3.6, 0, 2.4);
 scene.add(cajasGroup);
 function pintarPila(fraccion){
   cajasGroup.clear();
   const total = Math.max(0, Math.round(fraccion * 12));
-  const mat = new THREE.MeshStandardMaterial({ color:0xc27f3a, roughness:.85 }); // cartón, visible
+  const mat = new THREE.MeshStandardMaterial({ color:0xc27f3a, roughness:.85 });
   for (let k=0;k<total;k++){
     const b = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.5,0.72), mat);
     b.position.set((k%2)*0.82, 0.25 + Math.floor(k/2)*0.55, ((k%3)-1)*0.1);
@@ -728,11 +740,9 @@ function pintarPila(fraccion){
 }
 pintarPila(1);
 
-// Geocerca: zona de estacionamiento autorizado dibujada en el piso. Teal cuando el
-// camión está dentro; roja y pulsante cuando se estaciona fuera (anomalía). Postes
-// alrededor para que se lea como un perímetro.
-const GEO = { cx:0.4, cz:1.2, R:2.3 };       // centro y radio de la geocerca
-const STOP_X_OUT = -3.4;                     // el camión queda FUERA del aro
+// Geocerca
+const GEO = { cx:0.4, cz:1.2, R:2.3 };
+const STOP_X_OUT = -3.4;
 const TEAL = 0x14b8a6;
 const geofenceGrp = new THREE.Group();
 geofenceGrp.position.set(GEO.cx, 0.02, GEO.cz);
@@ -755,7 +765,6 @@ geofenceGrp.visible = false;
 scene.add(geofenceGrp);
 const geofence = { visible:false, fuera:false };
 function configurarGeocerca(estado){
-  // estado: null = ocultar; false = dentro (teal); true = fuera de geocerca (rojo)
   if (estado === null || estado === undefined){ geofenceGrp.visible=false; geofence.visible=false; return; }
   geofence.visible = true; geofence.fuera = !!estado; geofenceGrp.visible = true;
   const col = estado ? RED[500] : TEAL;
@@ -765,32 +774,28 @@ function configurarGeocerca(estado){
 }
 configurarDestino({ tipo:'cedis' });
 
-// Bucle de render + reloj de animación (delta-time, se pausa en segundo plano)
-let animClock = 0;      // acumulador de segundos para la aguja (NO avanza si oculto)
+// Render loop
+let animClock = 0;
 let lastNow = performance.now();
-let trasladoAnim = null; // {t0, dur, onMid, mid}
+let trasladoAnim = null;
 function loop(now){
   requestAnimationFrame(loop);
   const dt = (now - lastNow) / 1000;
   lastNow = now;
-  if (!document.hidden) animClock += dt;   // pausa el acumulador en visibilitychange
+  if (!document.hidden) animClock += dt;
 
-  // Animación de traslado (delta-time): el camión SALE de pantalla por la derecha,
-  // a mitad se reconfigura el destino (otro lugar) y ENTRA por la izquierda hasta su
-  // punto de estacionamiento (dentro o FUERA de la geocerca).
   if (trasladoAnim){
     const k = Math.min(1, (animClock - trasladoAnim.t0) / trasladoAnim.dur);
     if (k < 0.5){
-      truck.position.x = trasladoAnim.desde + (OFF_DER - trasladoAnim.desde) * (k*2);   // salida
+      truck.position.x = trasladoAnim.desde + (OFF_DER - trasladoAnim.desde) * (k*2);
     } else {
       if (!trasladoAnim.mid){ trasladoAnim.mid = true; trasladoAnim.onMid && trasladoAnim.onMid(); }
-      truck.position.x = OFF_IZQ + (trasladoAnim.hasta - OFF_IZQ) * ((k-0.5)*2);         // llegada
+      truck.position.x = OFF_IZQ + (trasladoAnim.hasta - OFF_IZQ) * ((k-0.5)*2);
     }
-    truck.position.y = Math.abs(Math.sin(animClock*14)) * 0.05;      // leve bamboleo
+    truck.position.y = Math.abs(Math.sin(animClock*14)) * 0.05;
     if (k >= 1){ const h = trasladoAnim.hasta; trasladoAnim = null; truck.position.set(h, 0, 2); }
   }
 
-  // Pulso de la geocerca: sutil dentro (teal), marcado y palpitante fuera (rojo).
   if (geofence.visible){
     const base = geofence.fuera ? 0.24 : 0.12;
     const amp  = geofence.fuera ? 0.16 : 0.04;
@@ -802,11 +807,10 @@ function loop(now){
     geofenceGrp.scale.set(s, 1, s);
   }
 
-  // Aguja del minijuego (posición por delta-time → igual a 60 y 120 Hz)
   if (G.mj && G.mj.activo && !G.mj.resolviendo){
     const ciclo = G.mj.cicloEff;
-    const fase = (animClock % ciclo) / ciclo;           // 0..1
-    const tri = fase < 0.5 ? fase*2 : (1-fase)*2;        // 0..1..0
+    const fase = (animClock % ciclo) / ciclo;
+    const tri = fase < 0.5 ? fase*2 : (1-fase)*2;
     G.mj.pos = tri;
     aguja.style.left = (tri*100) + '%';
   }
@@ -822,15 +826,13 @@ function resize(){
 window.addEventListener('resize', resize);
 resize();
 
-// Al volver de segundo plano, evita saltos: no arrastres el tiempo oculto.
 document.addEventListener('visibilitychange', ()=>{ lastNow = performance.now(); });
 
 /* =====================================================================
-   MÁQUINA DE ESTADOS: MENU → SELECCION_CAMION → TRASLADO → PARADA →
-   RETORNO_CEDIS → RESULTADOS. Una función por estado.
+   MÁQUINA DE ESTADOS: MENU → BRIEFING → TRASLADO → PARADA → RESULTADOS
    ===================================================================== */
 const pantallas = {
-  MENU:'menu', SELECCION:'seleccion', JUEGO:'hud', RESULTADOS:'resultados'
+  MENU:'menu', BRIEFING:'briefing', JUEGO:'hud', RESULTADOS:'resultados'
 };
 function mostrar(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
@@ -842,16 +844,16 @@ const $ = id => document.getElementById(id);
 function estadoMenu(){
   G.estado='MENU';
   mostrar('menu');
+  renderLeaderboard('lbMenu');
 }
 
-// ---------- SELECCION_CAMION ----------
-function estadoSeleccion(){
-  G.estado='SELECCION';
-  mostrar('seleccion');
-  document.getElementById('hud').classList.remove('on');
+// ---------- BRIEFING DE RUTA (reemplaza selección de camión) ----------
+function estadoBriefing(){
+  G.estado='BRIEFING';
+  mostrar('briefing');
+  $('hud').classList.remove('on');
   $('minijuego').classList.remove('on');
 
-  // Info de la ruta ACTIVA (decisión informada, no adivinada)
   const totalCajas = RUTA.cajas.reduce((a,b)=>a+b,0);
   const estrechas = RUTA.zonaEstrecha.map((e,i)=> e?`P${i+1}`:null).filter(Boolean);
   const ventanas = RUTA.ventanaCierre
@@ -862,59 +864,36 @@ function estadoSeleccion(){
     `<span class="chip">🗺️ ${RUTA.nombre}</span>`+
     `<span class="chip">📦 ${totalCajas} cajas · ${num.reduce((a,b)=>a+b)} maniobras</span>`+
     `<span class="chip">🛑 ${RUTA.cajas.length} paradas</span>`+
-    `<span class="chip">🏪 ${nTradicional} Canal Tradicional · 🏬 ${nModerno} Canal Moderno</span>`+
+    `<span class="chip">🏪 ${nTradicional} Tradicional · 🏬 ${nModerno} Moderno</span>`+
     `<span class="chip">↔️ ${estrechas.length} acceso estrecho${estrechas.length?` (${estrechas.join(', ')})`:''}</span>`+
     `<span class="chip">⏰ Ventanas: ${ventanas}</span>`;
 
-  // Lista de paradas con nombre y canal (decisión informada)
-  $('listaParadas').innerHTML = RUTA.cajas.map((c,i)=>
+  $('listaParadas').innerHTML = '<h3 style="font-size:14px;margin-bottom:8px">Paradas</h3>' +
+    RUTA.cajas.map((c,i)=>
     `<div class="kv"><span>P${i+1} · ${nombreParada(i)} ${canalBadge(i)}</span><b>${c} cajas</b></div>`).join('');
 
-  const chico = CONFIG.camiones.chico, grande = CONFIG.camiones.grande;
-  const retChico = calcularRetornos(chico, RUTA.cajas);
-  const retGrande = calcularRetornos(grande, RUTA.cajas);
-  const descRetorno = (ret) => ret.length
-    ? `<li class="warnTxt">${totalCajas} cajas &gt; capacidad → <b>${ret.length} retorno${ret.length>1?'s':''} a CEDIS</b> (tras ${ret.map(i=>'P'+(i+1)).join(', ')}, +${CONFIG.bloques.retornoCEDIS} min c/u)</li>`
-    : `<li>Cubre la ruta en una sola vuelta (sin retorno)</li>`;
-  $('cardChico').innerHTML =
-    `<h3>${chico.nombre}</h3>`+
-    `<ul>`+
-      `<li>Capacidad <b>${chico.capacidad}</b> cajas</li>`+
-      `<li>Estacionamiento <b>${chico.estacionamiento} min</b> por parada</li>`+
-      `<li>Sin penalización en acceso estrecho</li>`+
-      descRetorno(retChico)+
-    `</ul>`+
-    `<button class="primary interactivo" data-cam="chico">Elegir chico</button>`;
-  $('cardGrande').innerHTML =
-    `<h3>${grande.nombre}</h3>`+
-    `<ul>`+
-      `<li>Capacidad <b>${grande.capacidad}</b> cajas</li>`+
-      `<li>Estacionamiento <b>${grande.estacionamiento} min</b> por parada</li>`+
-      `<li class="warnTxt">+${grande.penalizacionEstrecha} min en cada acceso estrecho${estrechas.length?` (${estrechas.join(', ')})`:''}</li>`+
-      descRetorno(retGrande)+
-    `</ul>`+
-    `<button class="primary interactivo" data-cam="grande">Elegir grande</button>`;
-  document.querySelectorAll('[data-cam]').forEach(b=>{
-    b.onclick = ()=> elegirCamion(b.dataset.cam);
-  });
+  const cam = CONFIG.camion;
+  $('infoCamion').innerHTML =
+    `<h3 style="font-size:14px;margin-bottom:8px">🚚 ${cam.nombre}</h3>`+
+    `<div class="kv"><span class="muted">Capacidad</span><b>${cam.capacidad} cajas</b></div>`+
+    `<div class="kv"><span class="muted">Estacionamiento</span><b>${cam.estacionamiento} min/parada</b></div>`+
+    `<div class="kv"><span class="muted">Penalización acceso estrecho</span><b>+${cam.penalizacionEstrecha} min</b></div>`;
+
+  $('btnIniciarRuta').onclick = ()=> iniciarRuta();
 }
 
-// Pre-rodar eventos con el RNG sembrado (misma semilla ⇒ mismos eventos,
-// independiente del camión, para que el contrafactual sea justo).
+// Pre-rodar eventos con el RNG sembrado
 function prerodarEventos(){
   const ev = [];
   for (let i=0;i<num.length;i++) ev.push(G.rng() < CONFIG.evento.probabilidad);
-  // Garantiza al menos uno por partida, forzándolo en el tramo medio (P3–P5).
   if (!ev.some(Boolean)){
-    const medios = [2,3,4];
-    const idx = medios[Math.floor(G.rng()*medios.length)];
-    ev[idx] = true;
+    const mid = Math.floor(num.length/2);
+    const medios = [Math.max(0,mid-1), mid, Math.min(num.length-1,mid+1)];
+    ev[medios[Math.floor(G.rng()*medios.length)]] = true;
   }
   return ev;
 }
 
-// Pre-rodar geocercas con el mismo RNG sembrado. Anomalía por parada; si ninguna
-// salió, se fuerza una en parada aleatoria (garantiza ≥1 por ruta).
 function prerodarGeocercas(){
   const gc = [];
   for (let i=0;i<num.length;i++) gc.push(G.rng() < CONFIG.geocerca.probabilidad);
@@ -924,20 +903,14 @@ function prerodarGeocercas(){
   return gc;
 }
 
-function elegirCamion(id){
-  G.camion = CONFIG.camiones[id];
-  G.otroCamion = CONFIG.camiones[id==='chico' ? 'grande' : 'chico'];
-  G.retornos = calcularRetornos(G.camion, RUTA.cajas);
-  // RNG, eventos y geocercas se fijan con la semilla ACTIVA (estables al repetir).
+// ---------- Arranque de ruta ----------
+function iniciarRuta(){
+  G.camion = CONFIG.camion;
   G.rng = mulberry32(G.seedActual);
   G.eventos = prerodarEventos();
   G.geocercas = prerodarGeocercas();
   G.plan = calcularPlan();
-  iniciarRuta();
-}
 
-// ---------- Arranque de ruta ----------
-function iniciarRuta(){
   G.estado='JUEGO';
   G.maniobras = num.map(()=>[]);
   G.paradaIdx = 0;
@@ -946,15 +919,15 @@ function iniciarRuta(){
   G.segmentos = [];
   G.llegadaReal = [];
   G.rechazoReal = [];
+  G.npsReal = [];
   mostrar('hud');
   $('avisos').innerHTML = '';
-  pushSeg('cedis', CONFIG.bloques.cargaCEDIS);   // carga en CEDIS (no Stay Time)
+  pushSeg('cedis', CONFIG.bloques.cargaCEDIS);
   actualizarReloj();
   entrarTraslado(0);
 }
 
-/* ---- Barra de jornada: empuja segmentos cronológicos por categoría.
-   Los minutos por encima del presupuesto (480) se pintan como 'extra'. ---- */
+/* ---- Barra de jornada ---- */
 function pushSeg(cat, mins){
   const L = CONFIG.jornada.presupuestoMin;
   const start = G.elapsed, end = start + mins;
@@ -973,11 +946,10 @@ function pushSeg(cat, mins){
 }
 
 const colorCat = { cedis:'var(--c-cedis)', traslado:'var(--c-traslado)',
-  stay:'var(--c-stay)', retorno:'var(--c-retorno)', extra:'var(--c-extra)' };
+  stay:'var(--c-stay)', extra:'var(--c-extra)' };
 function renderBarra(){
   const bar = $('jornadaBar');
   const span = CONFIG.jornada.spanBarraMin;
-  // limpia segmentos previos (conserva línea 15:00 y marca ahora)
   [...bar.querySelectorAll('.seg')].forEach(e=>e.remove());
   const frag = document.createDocumentFragment();
   G.segmentos.forEach(s=>{
@@ -995,17 +967,15 @@ function renderBarra(){
 function actualizarReloj(){
   $('horaDia').textContent = hhmm(G.reloj);
   const extra = Math.max(0, G.elapsed - CONFIG.jornada.presupuestoMin);
-  const enRojo = G.reloj >= CONFIG.jornada.limiteRojoMin;
-  $('horaDia').style.color = enRojo ? 'var(--bad)' : 'var(--txt)';
-  if (extra>0) $('estadoReloj').innerHTML = `<span style="color:var(--bad)">zona roja · +${Math.round(extra)} min extra</span>`;
+  const enRojo = G.reloj >= CONFIG.jornada.corteDuroMin;
+  $('horaDia').style.color = enRojo ? 'var(--bad)' : (extra > 0 ? 'var(--warn)' : 'var(--txt)');
+  if (enRojo) $('estadoReloj').innerHTML = `<span style="color:var(--bad)">⏰ ¡Jornada agotada!</span>`;
+  else if (extra>0) $('estadoReloj').innerHTML = `<span style="color:var(--warn)">zona amarilla · +${Math.round(extra)} min</span>`;
 }
 
 // ---------- TRASLADO ----------
 function entrarTraslado(i){
-  // El reloj de Stay Time está detenido; el de jornada SÍ corre (avanza 17 min).
   $('estadoReloj').innerHTML = `🚚 en traslado — <b>Stay Time detenido</b>, la jornada sigue corriendo`;
-  // A mitad de la animación el destino cambia a la parada i (otro lugar distinto).
-  // Si esa parada está fuera de geocerca, el camión estaciona FUERA del aro.
   trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000,
     mid:false, desde:truck.position.x, hasta:STOP_X,
     onMid:()=>{
@@ -1015,7 +985,7 @@ function entrarTraslado(i){
       trasladoAnim.hasta = fuera ? STOP_X_OUT : STOP_X;
     } };
   setTimeout(()=>{
-    pushSeg('traslado', CONFIG.bloques.trasladoPorTramo);
+    pushSeg('traslado', trasladoTramo());
     entrarParada(i);
   }, CONFIG.ui.trasladoAnimMs);
 }
@@ -1029,7 +999,6 @@ function entrarParada(i){
   $('estadoReloj').textContent = `parada ${i+1} de ${num.length} · ${nombreParada(i)}`;
   pintarPila(1);
 
-  // Panel de parada: nombre, canal, plan vs real
   $('ppTitulo').innerHTML = `Parada ${i+1}/${num.length} · <b>${nombreParada(i)}</b>` +
     (RUTA.zonaEstrecha[i] ? ' · acceso estrecho' : '') +
     `<div style="margin-top:4px">${canalBadge(i)}</div>`;
@@ -1039,65 +1008,72 @@ function entrarParada(i){
   $('ppAtraso').innerHTML = `<span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
   $('ppStayPlan').textContent = Math.round(G.plan.stay[i]) + ' min';
   $('ppStayReal').textContent = '0 min';
+  $('npsVivo').innerHTML = '';
 
-  // ¿Ventana de recepción vencida?
   const rechazo = ventanaMin[i] != null && llegada > ventanaMin[i];
   G.rechazoReal[i] = rechazo;
   if (rechazo){
     const tarde = Math.round(llegada - ventanaMin[i]);
-    toast(`❌ ${nombreParada(i)} (${canalLabel(i)}): llegaste ${tarde} min tarde por el atraso acumulado. `+
+    toast(`❌ ${nombreParada(i)} (${canalLabel(i)}): llegaste ${tarde} min tarde. `+
           `El cliente rechaza, ${RUTA.cajas[i]} cajas quedan como venta perdida.`, 'bad');
-    // Stay = estacionamiento + gestión; no hay minijuego.
-    pushSeg('stay', G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin);
-    $('ppStayReal').textContent = Math.round(G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin)+' min';
+    const stayRechazo = G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin;
+    pushSeg('stay', stayRechazo);
+    $('ppStayReal').textContent = Math.round(stayRechazo)+' min';
+    // NPS del rechazo
+    G.npsReal[i] = { emoji:'🤬', nps:0, label:'Rechazado' };
+    $('npsVivo').innerHTML = `🤬 NPS 0`;
     setTimeout(()=> salirParada(i), 1400);
     return;
   }
 
-  // Parte fija del Stay Time (estacionamiento + penalización + atención al cliente)
   let fijo = G.camion.estacionamiento;
   if (RUTA.zonaEstrecha[i]) fijo += G.camion.penalizacionEstrecha;
   fijo += CONFIG.bloques.atencionCliente;
   pushSeg('stay', fijo);
   G._stayReal = fijo;
   $('ppStayReal').textContent = Math.round(fijo) + ' min';
+  actualizarNpsVivo(i);
 
-  // Evento aleatorio (aviso no bloqueante, +5 min)
   if (G.eventos[i]){
     pushSeg('stay', CONFIG.evento.extraMin);
     G._stayReal += CONFIG.evento.extraMin;
     $('ppStayReal').textContent = Math.round(G._stayReal)+' min';
     toast(`⚠️ ${nombreParada(i)}: bodega bloqueada, +${CONFIG.evento.extraMin} min al Stay Time.`, '');
+    actualizarNpsVivo(i);
   }
 
-  // Anomalía de geocerca (no suma minutos; endurece la maniobra)
   if (G.geocercas[i]){
-    toast(`🛰️ ${nombreParada(i)}: estacionamiento FUERA de geocerca. El camión no pudo `+
-          `entrar al punto autorizado; las maniobras son más difíciles.`, 'bad');
+    toast(`🛰️ ${nombreParada(i)}: estacionamiento FUERA de geocerca. Las maniobras son más difíciles.`, 'bad');
   }
 
   iniciarMinijuego(i);
 }
 
-// ---------- RETORNO_CEDIS ----------
-function retornoCEDIS(i, next){
-  $('estadoReloj').innerHTML = `🔄 <b>Retorno a CEDIS</b> — recarga por capacidad (bloque de ${CONFIG.bloques.retornoCEDIS} min, no es Stay Time)`;
-  trasladoAnim = { t0:animClock, dur:CONFIG.ui.trasladoAnimMs/1000,
-    mid:false, desde:truck.position.x, hasta:STOP_X,
-    onMid:()=>{ configurarDestino({ tipo:'cedis' }); configurarGeocerca(null); } };
-  setTimeout(()=>{
-    pushSeg('retorno', CONFIG.bloques.retornoCEDIS);
-    next();
-  }, CONFIG.ui.trasladoAnimMs);
+// Actualizar NPS en vivo en el panel (conforme avanza el stay time)
+function actualizarNpsVivo(i){
+  const desv = G._stayReal - G.plan.stay[i];
+  const n = calcNps(desv);
+  $('npsVivo').innerHTML = `${n.emoji} NPS ${n.nps} · ${n.label}`;
 }
 
 function salirParada(i){
-  // Resumen de desviación durante 2 s
+  // Calcular NPS final de la parada (si no fue rechazo, que ya lo tiene)
+  if (!G.rechazoReal[i]){
+    const stayReal = G._stayReal + G.maniobras[i].reduce((a,b)=>a+b,0);
+    const n = npsParada(stayReal, G.plan.stay[i], false, false);
+    G.npsReal[i] = n;
+  }
+
+  const nps = G.npsReal[i];
   const atraso = G.llegadaReal[i] - G.plan.llegada[i];
-  $('rdTitulo').innerHTML = `Atraso acumulado: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
   const stayReal = G.rechazoReal[i]
     ? (G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin)
     : (G._stayReal + G.maniobras[i].reduce((a,b)=>a+b,0));
+
+  // Resumen con emoji NPS
+  $('rdEmoji').textContent = nps.emoji;
+  $('rdNpsLabel').textContent = `NPS ${nps.nps} · ${nps.label}`;
+  $('rdTitulo').innerHTML = `Atraso: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
   $('rdDetalle').innerHTML =
     `<b>${nombreParada(i)}</b> · ${canalLabel(i)}<br>`+
     `Stay Time real ${Math.round(stayReal)} min vs planeado ${Math.round(G.plan.stay[i])} min`;
@@ -1105,13 +1081,15 @@ function salirParada(i){
 
   setTimeout(()=>{
     $('resumenDesv').classList.remove('on');
-    const irSiguiente = ()=>{
-      if (i < num.length-1) entrarTraslado(i+1);
-      else finalizarJornada();
-    };
-    // Retorno a CEDIS tras la parada 4 (sólo camión chico)
-    if (G.retornos.includes(i)) retornoCEDIS(i, irSiguiente);
-    else irSiguiente();
+    // ¿Se acabó la jornada? (corte a las 15:00)
+    if (G.reloj >= CONFIG.jornada.corteDuroMin && i < num.length - 1){
+      toast('⏰ ¡Se acabó la jornada! No te dio tiempo de completar la ruta.', 'bad');
+      setTimeout(()=> finalizarJornada(), 1500);
+    } else if (i < num.length-1){
+      entrarTraslado(i+1);
+    } else {
+      finalizarJornada();
+    }
   }, CONFIG.ui.resumenDesvMs);
 }
 
@@ -1122,34 +1100,31 @@ function finalizarJornada(){
     mid:false, desde:truck.position.x, hasta:STOP_X,
     onMid:()=>{ configurarDestino({ tipo:'cedis' }); configurarGeocerca(null); } };
   setTimeout(()=>{
-    pushSeg('traslado', CONFIG.bloques.trasladoPorTramo);   // P7 → CEDIS
-    pushSeg('cedis', CONFIG.bloques.liquidacionFinal);      // liquidación
+    pushSeg('traslado', trasladoTramo());
+    pushSeg('cedis', CONFIG.bloques.liquidacionFinal);
     estadoResultados();
   }, CONFIG.ui.trasladoAnimMs);
 }
 
 /* =====================================================================
-   FASE 2 — MINIJUEGO DE DESCARGA (precisión, no velocidad)
+   MINIJUEGO DE DESCARGA
    ===================================================================== */
 const aguja = $('mjAguja');
 const barraMJ = $('mjBarra');
 
 function anchoVerde(i, m, n){
   const esUltima = (m === n-1);
-  let verde = esUltima ? CONFIG.mj.zonaVerdeUltima          // el remate, 22%
-    : RUTA.zonaEstrecha[i] ? CONFIG.mj.zonaVerdeEstrecha    // 12%
-    : CONFIG.mj.zonaVerde;                                  // 18%
-  // Fuera de geocerca: la verde se angosta (se apila sobre estrecha/última).
+  let verde = esUltima ? CONFIG.mj.zonaVerdeUltima
+    : RUTA.zonaEstrecha[i] ? CONFIG.mj.zonaVerdeEstrecha
+    : CONFIG.mj.zonaVerde;
   if (G.geocercas[i]) verde *= CONFIG.geocerca.factorZonaVerde;
   return verde;
 }
 function factorVelocidad(i, m, n){
   let f = 1;
-  // Paradas de 5+ maniobras: acelera 8% por maniobra a partir de la 3ª.
   if (n >= CONFIG.mj.umbralManiobrasAcelera && m >= 2){
-    f *= 1 + CONFIG.mj.aceleracionPorManiobra * (m - 1);    // 3ª:+8%, 4ª:+16%, 5ª:+24%
+    f *= 1 + CONFIG.mj.aceleracionPorManiobra * (m - 1);
   }
-  // Fuera de geocerca: la aguja va más rápido.
   if (G.geocercas[i]) f *= CONFIG.geocerca.factorVelocidadAguja;
   return f;
 }
@@ -1195,10 +1170,8 @@ function arrancarManiobra(){
   $('etqDificultad').textContent = etiquetaDificultad(i, m, n);
 }
 
-// Resolver la maniobra: sólo cuenta la POSICIÓN de la aguja (precisión de timing).
-// Apretar antes o después de la verde penaliza igual. Sin bonus por rapidez.
 function resolverManiobra(){
-  if (!G.mj || !G.mj.activo || G.mj.resolviendo) return; // input bloqueado / un solo input
+  if (!G.mj || !G.mj.activo || G.mj.resolviendo) return;
   G.mj.activo = false; G.mj.resolviendo = true;
 
   const pos = G.mj.pos;
@@ -1211,10 +1184,11 @@ function resolverManiobra(){
 
   const {i, m, n} = G.mj;
   G.maniobras[i].push(tiempo);
-  pushSeg('stay', tiempo);                     // suma al Stay Time real en vivo
+  pushSeg('stay', tiempo);
   G._stayReal = (G._stayReal||0) + tiempo;
   $('ppStayReal').textContent = Math.round(G._stayReal) + ' min';
   pintarPila(1 - (m+1)/n);
+  actualizarNpsVivo(i);
 
   $('mjFeedback').innerHTML = `<span style="color:${color}">${zona} · ${tiempo.toFixed(1)} min</span>`;
 
@@ -1225,7 +1199,7 @@ function resolverManiobra(){
 }
 
 /* =====================================================================
-   HUD — avisos / toasts
+   TOASTS
    ===================================================================== */
 function toast(txt, tipo){
   const d = document.createElement('div');
@@ -1237,54 +1211,62 @@ function toast(txt, tipo){
 }
 
 /* =====================================================================
-   FASE 4 — PANTALLA DE RESULTADOS
+   PANTALLA DE RESULTADOS
    ===================================================================== */
 function estadoResultados(){
   G.estado='RESULTADOS';
   $('minijuego').classList.remove('on');
   mostrar('resultados');
 
-  // Simulación con la ejecución real (fuente de verdad) + contrafactual
   const sim = simularJornada(G.camion, G.maniobras, G.eventos);
-  const contra = simularJornada(G.otroCamion, G.maniobras, G.eventos);
   const costos = calcularCostos(G.camion, sim);
-  const costosContra = calcularCostos(G.otroCamion, contra);
   const estrellas = estrellasPara(costos.total);
 
-  // --- Desglose apilado del Stay Time (concepto por concepto) ---
+  // NPS por parada (para paradas que no se jugaron: no entregadas)
+  const npsArr = sim.paradas.map(p => {
+    if (G.npsReal[p.i]) return G.npsReal[p.i];
+    if (p.noEntregada) return { emoji:'🤬', nps:0, label:'No entregado' };
+    if (p.rechazo) return { emoji:'🤬', nps:0, label:'Rechazado' };
+    const n = npsParada(p.stay, G.plan.stay[p.i], p.rechazo, p.noEntregada);
+    return n;
+  });
+  const npsValues = npsArr.map(n=>n.nps);
+  const npsPromedio = npsValues.length ? (npsValues.reduce((a,b)=>a+b,0) / npsValues.length) : 0;
+  const entregadas = sim.paradas.filter(p => !p.noEntregada && !p.rechazo).length;
+
+  // Desglose Stay Time
   const agg = { estac:0, penal:0, atencion:0, descarga:0, evento:0, gestion:0 };
-  let traslados=0, retorno=0;
+  let traslados=0;
   sim.paradas.forEach(p=>{ for(const k in agg) agg[k]+=p.desglose[k]; });
-  traslados = CONFIG.bloques.trasladoPorTramo * (sim.truncado ? 0 : num.length+1)
-            + CONFIG.bloques.cargaCEDIS + CONFIG.bloques.liquidacionFinal;
-  retorno = sim.retornos * CONFIG.bloques.retornoCEDIS;
+  const nTramos = sim.truncado ? (sim.paradas.filter(p=>!p.noEntregada).length + 1) : (num.length+1);
+  traslados = trasladoTramo() * nTramos + CONFIG.bloques.cargaCEDIS + CONFIG.bloques.liquidacionFinal;
   const extra = sim.tiempoExtra;
 
-  // --- Tabla PLAN vs REAL por parada ---
-  let atrasoAcum = 0;
-  const filas = sim.paradas.map(p=>{
-    const planLleg = G.plan.llegada[p.i], planStay = G.plan.stay[p.i];
-    const atraso = p.llegada - planLleg;
+  // Tabla plan vs real
+  const filas = sim.paradas.map((p,idx) => {
+    const planStay = G.plan.stay[p.i];
     const desv = p.stay - planStay;
-    const est = p.noEntregada ? 'NO ENTREGADA (corte 17:00)'
-              : p.rechazo ? 'RECHAZO por ventana' : 'OK';
+    const planLleg = G.plan.llegada[p.i];
+    const atraso = p.llegada - planLleg;
+    const est = p.noEntregada ? '❌ NO ENTREGADA'
+              : p.rechazo ? '❌ RECHAZO' : '✅ OK';
     const geo = G.geocercas[p.i] ? ' 🛰️' : '';
+    const npsInfo = npsArr[idx];
     return `<tr>
-      <td><b>P${p.i+1}</b> ${nombreParada(p.i)}${p.rechazo||p.noEntregada?' ⚠️':''}${geo}
-        <div class="sub">${canalLabel(p.i)}${G.geocercas[p.i]?' · fuera de geocerca':''}</div></td>
+      <td><b>P${p.i+1}</b> ${nombreParada(p.i)}${geo}
+        <div class="sub">${canalLabel(p.i)}</div></td>
       <td>${Math.round(planStay)}</td>
-      <td>${Math.round(p.stay)}</td>
-      <td class="${desv>0?'neg':desv<0?'pos':'zero'}">${firma(desv)}</td>
+      <td>${p.noEntregada ? '—' : Math.round(p.stay)}</td>
+      <td class="${desv>0?'neg':desv<0?'pos':'zero'}">${p.noEntregada ? '—' : firma(desv)}</td>
       <td>${hhmm(planLleg)}</td>
       <td>${hhmm(p.llegada)}</td>
       <td class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)}</td>
+      <td style="font-size:18px;text-align:center" title="NPS ${npsInfo.nps}">${npsInfo.emoji}</td>
       <td class="sub">${est}</td>
     </tr>`;
   }).join('');
 
-  // --- Consejo operativo según el mayor contribuyente a la desviación ---
-  const consejo = generarConsejo(sim, contra, agg, costos, costosContra);
-
+  const consejo = generarConsejo(sim, agg, costos);
   const estrellasStr = '★'.repeat(estrellas) + '☆'.repeat(5-estrellas);
   const stackDesglose = renderStack([
     ['Estacionamiento+maniobra', agg.estac+agg.penal, 'var(--c-stay)'],
@@ -1294,20 +1276,31 @@ function estadoResultados(){
   ]);
   const stackNoStay = renderStack([
     ['Traslados + CEDIS', traslados, 'var(--c-traslado)'],
-    ['Retorno CEDIS', retorno, 'var(--c-retorno)'],
     ['Tiempo extra', extra, 'var(--c-extra)']
   ]);
 
+  // NPS promedio badge
+  const npsColor = npsPromedio >= 8 ? 'var(--ok)' : npsPromedio >= 5 ? 'var(--warn)' : 'var(--bad)';
+  const npsEmoji = calcNps(npsPromedio <= 0 ? 0 : (10-npsPromedio)*2.5).emoji;
+
   $('resultados').innerHTML = `
-    <h2>Cierre de jornada</h2>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
+           alt="Coca‑Cola" class="coca-logo-sm" onerror="this.style.display='none'">
+      <h2 style="margin:0">Cierre de jornada</h2>
+    </div>
+    ${sim.truncado ? '<div class="toast bad" style="margin-bottom:12px;pointer-events:auto">⏰ <b>No te dio tiempo.</b> ' + sim.paradas.filter(p=>p.noEntregada).length + ' parada(s) quedaron sin entrega.</div>' : ''}
     <div class="grid2">
       <div class="card">
-        <div class="sub">Con ${G.camion.nombre.toLowerCase()}</div>
+        <div class="sub">${G.nombreJugador || 'Jugador'} · ${CONFIG.camion.nombre.toLowerCase()}</div>
         <div class="cierreBig" style="color:${sim.tiempoExtra>0?'var(--bad)':'var(--ok)'}">${hhmm(sim.cierre)}</div>
         <div>Jornada total <b>${Math.round(sim.total)} min</b> ·
           tiempo extra <b class="${sim.tiempoExtra>0?'neg':'zero'}">${Math.round(sim.tiempoExtra)} min</b></div>
         <div class="estrellas" style="margin-top:8px;color:#e0a800">${estrellasStr}</div>
-        <div class="sub">calificación sobre el costo total del turno</div>
+        <div style="margin-top:8px;font-size:28px;text-align:center">
+          NPS promedio: <span style="color:${npsColor};font-weight:800">${npsPromedio.toFixed(1)}</span>
+        </div>
+        <div class="sub">Entregas: ${entregadas}/${num.length} paradas</div>
       </div>
       <div class="card consejo">
         <h3>Consejo operativo</h3>
@@ -1316,12 +1309,11 @@ function estadoResultados(){
     </div>
 
     <div class="card" style="margin-top:14px">
-      <h3>Plan del planeador vs realidad — por parada</h3>
-      <div class="sub" style="margin-bottom:6px">El plan (465 min, cierra 14:45) asume el camión grande e ignora los accesos estrechos. Es un documento fijo hecho antes de elegir camión.</div>
+      <h3>Plan vs realidad — por parada</h3>
       <div class="scroll">
       <table>
         <thead><tr><th>Parada</th><th>Stay plan</th><th>Stay real</th><th>Desv.</th>
-          <th>Hora plan</th><th>Hora real</th><th>Atraso</th><th>Estado</th></tr></thead>
+          <th>Hora plan</th><th>Hora real</th><th>Atraso</th><th>NPS</th><th>Estado</th></tr></thead>
         <tbody>${filas}</tbody>
       </table>
       </div>
@@ -1344,19 +1336,8 @@ function estadoResultados(){
     </div>
 
     <div class="card" style="margin-top:14px">
-      <h3>Contrafactual — misma ejecución, misma semilla, el OTRO camión</h3>
-      <div class="sub" style="margin-bottom:8px">Qué habría pasado con ${G.otroCamion.nombre.toLowerCase()} conservando tu desempeño real en la descarga.</div>
-      <div class="scroll">
-      <table>
-        <thead><tr><th></th><th>${G.camion.nombre} (jugado)</th><th>${G.otroCamion.nombre} (contrafactual)</th></tr></thead>
-        <tbody>
-          <tr><td>Cierre</td><td>${hhmm(sim.cierre)}</td><td>${hhmm(contra.cierre)}</td></tr>
-          <tr><td>Jornada total</td><td>${Math.round(sim.total)} min</td><td>${Math.round(contra.total)} min</td></tr>
-          <tr><td>Tiempo extra</td><td>${Math.round(sim.tiempoExtra)} min</td><td>${Math.round(contra.tiempoExtra)} min</td></tr>
-          <tr><td>Costo total</td><td>$${costos.total.toFixed(0)}</td><td>$${costosContra.total.toFixed(0)}</td></tr>
-        </tbody>
-      </table>
-      </div>
+      <h3>🏆 Leaderboard</h3>
+      <div id="lbResultados"></div>
     </div>
 
     <div style="display:flex;gap:12px;margin:18px 0 40px">
@@ -1364,7 +1345,27 @@ function estadoResultados(){
       <button class="interactivo" id="btnMenu">Menú</button>
     </div>
   `;
-  $('btnRepetir').onclick = ()=> estadoSeleccion();   // conserva CONFIG.seed ⇒ comparación justa
+
+  // Guardar en leaderboard
+  const entry = {
+    nombre: G.nombreJugador || 'Anónimo',
+    npsPromedio: Math.round(npsPromedio*10)/10,
+    costoTotal: Math.round(costos.total),
+    estrellas,
+    paradasEntregadas: entregadas,
+    paradasTotal: num.length,
+    ruta: G.rutaKey,
+    fecha: new Date().toISOString().slice(0,10),
+    _fresh: true
+  };
+  agregarPuntaje(entry);
+  renderLeaderboard('lbResultados', G.nombreJugador);
+  // Quitar el flag _fresh para que solo el recién guardado se resalte
+  const lb = cargarLeaderboard();
+  lb.forEach(e => delete e._fresh);
+  guardarLeaderboard(lb);
+
+  $('btnRepetir').onclick = ()=> estadoBriefing();
   $('btnMenu').onclick = ()=> estadoMenu();
 }
 
@@ -1378,39 +1379,35 @@ function renderCostos(c){
   const filas = [
     ['Tiempo extra', c.extra],
     ['Rechazos ('+c.rechazos+')', c.cRechazo],
-    ['Cajas no entregadas ('+c.cajasPerdidas+')', c.cCajas],
-    ['Retorno a CEDIS', c.cRetorno]
+    ['Cajas no entregadas ('+c.cajasPerdidas+')', c.cCajas]
   ].map(([n,v])=>`<div class="kv"><span class="muted">${n}</span><b>$${v.toFixed(0)}</b></div>`).join('');
   return filas + `<hr style="border-color:var(--line)"><div class="kv"><span><b>TOTAL</b></span><b style="font-size:18px">$${c.total.toFixed(0)}</b></div>`;
 }
 
-// Consejo según el mayor contribuyente a la desviación (4 casos).
-function generarConsejo(sim, contra, agg, costos, costosContra){
+function generarConsejo(sim, agg, costos){
   const rechazos = costos.rechazos;
-  // Exceso de ejecución: minutos por encima del óptimo verde en la descarga.
+  const noEntregadas = sim.paradas.filter(p=>p.noEntregada).length;
   const optimo = num.reduce((a,n)=>a+n,0) * CONFIG.mj.tVerde;
   const ejecucion = Math.max(0, agg.descarga - optimo);
   const eventos = agg.evento + agg.gestion;
-  // Impacto de flota: cuánto peor/mejor salió tu camión frente al otro.
-  const flota = sim.total - contra.total;
 
+  if (noEntregadas > 0)
+    return `<b>Tiempo insuficiente.</b> ${noEntregadas} parada(s) quedaron sin entrega porque se agotó la jornada de 8 horas. Cada minuto de atraso temprano se propagó hasta impedir completar la ruta. La eficiencia en las primeras paradas es clave.`;
   if (rechazos > 0)
-    return `<b>Propagación de atraso.</b> Tuviste ${rechazos} rechazo(s) por ventana: el atraso se acumuló parada tras parada hasta llegar fuera de horario. El costo no es lineal — un retraso temprano condena entregas posteriores. Ataca el origen del atraso, no la última parada.`;
-  if (flota > ejecucion && flota > eventos)
-    return `<b>Decisión de flota.</b> Con ${G.otroCamion.nombre.toLowerCase()} habrías cerrado ${Math.round(Math.abs(flota))} min ${flota>0?'antes':'después'}. Para esta ruta (${RUTA.cajas.reduce((a,b)=>a+b)} cajas, ${RUTA.zonaEstrecha.filter(Boolean).length} accesos estrechos), el camión importó más que tu ejecución.`;
+    return `<b>Propagación de atraso.</b> Tuviste ${rechazos} rechazo(s) por ventana: el atraso se acumuló parada tras parada hasta llegar fuera de horario. Ataca el origen del atraso, no la última parada.`;
   if (ejecucion >= eventos && ejecucion > 0)
-    return `<b>Ejecución de descarga.</b> Perdiste ~${Math.round(ejecucion)} min por maniobras fuera de la zona verde. La habilidad sí mueve la aguja aquí: cada maniobra imprecisa suma minutos que se propagan al resto de la jornada.`;
+    return `<b>Ejecución de descarga.</b> Perdiste ~${Math.round(ejecucion)} min por maniobras fuera de la zona verde. La habilidad sí mueve la aguja aquí: cada maniobra imprecisa suma minutos que se propagan.`;
   if (eventos > 0)
     return `<b>Eventos operativos.</b> Los imprevistos sumaron ${Math.round(eventos)} min. No dependen de ti, pero un buen colchón de tiempo temprano absorbe estos golpes sin generar rechazos.`;
-  return `<b>Jornada limpia.</b> Ejecución precisa y flota adecuada: cerraste sin rechazos y con mínimo tiempo extra. Este es el desempeño de referencia.`;
+  return `<b>Jornada limpia.</b> Ejecución precisa: cerraste sin rechazos, sin paradas perdidas y con mínimo tiempo extra. ¡Excelente desempeño!`;
 }
 
 /* =====================================================================
-   INPUT — Espacio (con preventDefault) y tap. Sin dependencia de teclado.
+   INPUT
    ===================================================================== */
 window.addEventListener('keydown', (e)=>{
   if (e.code === 'Space' || e.key === ' '){
-    e.preventDefault();                     // evita el scroll de la página
+    e.preventDefault();
     if (G.mj) resolverManiobra();
   }
 }, { passive:false });
@@ -1419,7 +1416,6 @@ $('btnDescargar').addEventListener('click', (e)=>{ e.preventDefault(); resolverM
 $('btnDescargar').addEventListener('touchstart', (e)=>{ e.preventDefault(); resolverManiobra(); }, { passive:false });
 
 // ---------- Selector de ruta en el menú ----------
-// Rellena el <select> con las rutas de CONFIG + una opción aleatoria.
 (function poblarSelectorRutas(){
   const sel = $('selRuta');
   Object.keys(CONFIG.rutas).forEach(key=>{
@@ -1428,13 +1424,13 @@ $('btnDescargar').addEventListener('touchstart', (e)=>{ e.preventDefault(); reso
     sel.appendChild(o);
   });
   const oRnd = document.createElement('option');
-  oRnd.value = '__aleatoria__'; oRnd.textContent = '🎲 Sorpréndeme (ruta y eventos al azar)';
+  oRnd.value = '__aleatoria__'; oRnd.textContent = '🎲 Sorpréndeme (ruta al azar)';
   sel.appendChild(oRnd);
   sel.value = CONFIG.rutaDefault;
 
   const describir = ()=>{
     if (sel.value === '__aleatoria__'){
-      $('selRutaDesc').innerHTML = 'Cada partida elige una ruta y una semilla nuevas. La comparación con «repetir ruta» sigue siendo justa (conserva ambas).';
+      $('selRutaDesc').innerHTML = 'Cada partida elige una ruta y una semilla nuevas.';
       return;
     }
     const r = CONFIG.rutas[sel.value];
@@ -1448,19 +1444,28 @@ $('btnDescargar').addEventListener('touchstart', (e)=>{ e.preventDefault(); reso
 })();
 
 $('btnEmpezar').onclick = ()=>{
+  // Validar nombre
+  const nombre = $('nombreInput').value.trim();
+  if (!nombre){
+    $('nombreInput').style.borderColor = 'var(--bad)';
+    $('nombreInput').focus();
+    return;
+  }
+  $('nombreInput').style.borderColor = '';
+  G.nombreJugador = nombre;
+
   const sel = $('selRuta');
   let key = sel.value;
   if (key === '__aleatoria__'){
     const keys = Object.keys(CONFIG.rutas);
     key = keys[Math.floor(Math.random()*keys.length)];
-    G.seedActual = (Math.random()*1e9) | 0;   // eventos distintos cada vez
+    G.seedActual = (Math.random()*1e9) | 0;
   } else {
-    // Rutas nombradas: semilla fija = demo reproducible (respeta los números del spec).
     G.seedActual = CONFIG.seed;
   }
   G.rutaKey = key;
   aplicarRuta(key);
-  estadoSeleccion();
+  estadoBriefing();
 };
 
 /* Arranque */

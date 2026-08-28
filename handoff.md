@@ -9,7 +9,7 @@
 
 ## 1. ¿Qué es esto?
 
-Un serious game para personal de operaciones de reparto. Enseña tres conceptos:
+Un serious game para personal de operaciones de reparto (Coca-Cola). Enseña tres conceptos:
 
 1. El **Stay Time** se compone de costo fijo (estacionamiento + atención al cliente) + costo variable (descarga).
 2. La jornada es un **presupuesto cerrado de 8 horas** (07:00 → 15:00). Excederlo tiene costo.
@@ -29,11 +29,11 @@ Partida activa: 3–4 minutos.
 | HUD | HTML/CSS plano superpuesto al canvas |
 | Cámara | Isométrica fija, sin controles de órbita |
 | RNG | Mulberry32 con semilla fija para reproducibilidad |
-| Persistencia | Ninguna (no hay localStorage ni backend actualmente) |
+| Persistencia | Ninguna actualmente (se va a agregar localStorage para leaderboard) |
 
 ---
 
-## 3. Estructura del archivo `index.html`
+## 3. Estructura del archivo `index.html` (estado ACTUAL, pre-refactor)
 
 ```
 Líneas ~1–152      CSS (variables, layout, screens, minijuego, resultados)
@@ -53,7 +53,7 @@ Líneas ~1408–1468  Input (teclado/touch), selector de rutas, arranque
 
 ---
 
-## 4. Máquina de estados
+## 4. Máquina de estados (ACTUAL, pre-refactor)
 
 ```
 MENU → SELECCION_CAMION → TRASLADO → PARADA → RETORNO_CEDIS → RESULTADOS
@@ -74,7 +74,7 @@ MENU → SELECCION_CAMION → TRASLADO → PARADA → RETORNO_CEDIS → RESULTAD
 
 ---
 
-## 5. CONFIG — constantes clave
+## 5. CONFIG — constantes clave (ACTUAL)
 
 | Constante | Valor | Nota |
 |---|---|---|
@@ -94,7 +94,7 @@ MENU → SELECCION_CAMION → TRASLADO → PARADA → RETORNO_CEDIS → RESULTAD
 
 ---
 
-## 6. Rutas disponibles
+## 6. Rutas disponibles (ACTUAL)
 
 | Key | Paradas | Cajas | Zonas estrechas | Ventanas |
 |---|---|---|---|---|
@@ -107,7 +107,7 @@ Más opción **🎲 Aleatoria** (ruta + semilla al azar).
 
 ---
 
-## 7. Números de referencia (ruta canónica, semilla 12345)
+## 7. Números de referencia (ruta canónica, semilla 12345) — ACTUAL
 
 | Escenario | Total | Cierre | Tiempo extra |
 |---|---|---|---|
@@ -115,13 +115,9 @@ Más opción **🎲 Aleatoria** (ruta + semilla al azar).
 | Camión grande perfecto | 468 min | 14:48 | 0 min |
 | Camión chico perfecto | 496 min | 15:16 | 16 min |
 
-- El chico está **condenado** con juego perfecto (+16 min extra).
-- El grande perfecto queda **3 min** detrás del plan.
-- Chico perfecto llega a P5 a las 12:15 (ventana 12:30, 15 min de margen).
-
 ---
 
-## 8. Mecánicas actuales
+## 8. Mecánicas existentes que SE CONSERVAN
 
 ### Minijuego de descarga
 - Barra con aguja oscilante (delta-time, igual a 60 y 120 Hz).
@@ -134,23 +130,94 @@ Más opción **🎲 Aleatoria** (ruta + semilla al azar).
 - "Bodega bloqueada", +5 min al Stay Time.
 
 ### Geocerca
-- 15% por parada, forzada ≥1.
-- No suma minutos; endurece el minijuego.
-- Visual: aro en el piso, camión estaciona fuera.
+- 15% por parada, forzada ≥1. No suma minutos; endurece el minijuego.
 
 ### Ventanas de recepción
 - Si llegas tarde → rechazo, cajas = venta perdida, +8 min gestión, sin minijuego.
 
-### Contrafactual
-- Resultados recalculan con el otro camión, misma ejecución y semilla.
+---
+
+## 9. REFACTOR PENDIENTE — lo que el jefe pidió
+
+### Estado: ⏳ NO IMPLEMENTADO AÚN
+
+Todas las decisiones de diseño están tomadas. Solo falta escribir el código.
+
+### T1: Simplificar a un solo camión
+- **ELIMINAR**: `CONFIG.camiones.chico`, pantalla `SELECCION_CAMION`, estado `RETORNO_CEDIS`, contrafactual en resultados.
+- **CONSERVAR**: `CONFIG.camiones.grande` como camión único (estac 6, penal 8, cap 550).
+- **Convertir** la pantalla de selección en un "briefing de ruta" (info sin decisión, un solo botón "Empezar ruta").
+- **Nuevo flujo**: `MENU → BRIEFING → TRASLADO → PARADA → RESULTADOS`
+- **Auto-asignar** `G.camion = CONFIG.camion` al iniciar la partida.
+
+### T2: Menos paradas + ajustar tiempos
+- **Ruta canónica**: 5 paradas (no 7). Las demás rutas se ajustan proporcionalmente.
+- **Ajustar** `trasladoPorTramo` y `atencionCliente` para que la tensión con 8 horas funcione.
+- **Diseño propuesto** para ruta canónica (5 paradas):
+  ```
+  cajas:        [100, 80, 120, 80, 100]   // suma 480
+  zonaEstrecha: [false, true, false, false, true]
+  ventanaCierre:[null, null, "10:45", null, "13:30"]
+  trasladoPorTramo: 25 (era 17)
+  atencionCliente: 15 (era 12)
+  maniobras: [5, 4, 6, 4, 5] = 24 total
+  ```
+- **Tensión**: jugador perfecto → 451 min (29 min de margen). Jugador mediocre (avg amarillo) → ~487 min (7 min de rebase, última parada en riesgo). Jugador malo → 535+ min, pierde 1-2 paradas.
+- `trasladoPorTramo` se hace PER-ROUTE (propiedad opcional de cada ruta). Fallback a `CONFIG.bloques.trasladoPorTramo`.
+
+### T3: Límite de 8 horas
+- **corteDuroMin** pasa de 17:00 (1020) a **15:00 (900)**.
+- **NO es game over**: el juego va a resultados con las paradas restantes como NO ENTREGADAS. Se penalizan con `costoCajaNoEntregada × cajas` y NPS 0.
+- Eliminar el concepto de "zona roja" (ya no hay tiempo extra posible).
+- `spanBarraMin` se ajusta a ~540 para que la barra muestre hasta 16:00 (espacio visual para rebase).
+- En `salirParada()`, verificar `G.reloj >= corteDuroMin` antes de ir a la siguiente.
+
+### T4: Calificación del cliente (NPS + emoji)
+- **Nuevo en CONFIG**:
+  ```js
+  nps: {
+    umbrales: [
+      { maxDesvMin: 0,   emoji: '😍', nps: 10, label: 'Encantado' },
+      { maxDesvMin: 3,   emoji: '😊', nps: 9,  label: 'Muy satisfecho' },
+      { maxDesvMin: 8,   emoji: '🙂', nps: 7,  label: 'Satisfecho' },
+      { maxDesvMin: 15,  emoji: '😐', nps: 5,  label: 'Neutral' },
+      { maxDesvMin: 25,  emoji: '😠', nps: 3,  label: 'Insatisfecho' },
+      { maxDesvMin: Infinity, emoji: '🤬', nps: 1, label: 'Furioso' }
+    ]
+  }
+  ```
+- **Cálculo**: desviación = stay time real − stay time planeado. Si ≤0 → 😍. Si 25+ → 🤬. Paradas rechazadas/no entregadas → 🤬 NPS 0.
+- **Dónde se muestra**:
+  - `salirParada()` → emoji grande + label en el resumen de desviación.
+  - Panel de parada (HUD) → NPS en vivo conforme avanza el stay time.
+  - Resultados → columna de emoji+NPS en la tabla. NPS promedio como KPI.
+- **Nota pedagógica**: con juego perfecto, las paradas con `zonaEstrecha` sacan NPS 7 (no 10) porque la penalización estructural (+8 min) genera desviación vs el plan (que ignora estrechas). Esto enseña que la infraestructura impacta la satisfacción del cliente.
+
+### T5: Leaderboard
+- **Input de nombre** en el menú (campo `<input id="nombreInput">`), requerido.
+- **Almacenamiento**: `localStorage.setItem('stLeaderboard', JSON.stringify(entries))`.
+- **Métrica principal**: NPS promedio (higher = better). Secundario: costo total.
+- **Estructura por entrada**:
+  ```js
+  { nombre, npsPromedio, costoTotal, estrellas, paradasEntregadas, paradasTotal, ruta, fecha }
+  ```
+- **Top 10**, ordenado por NPS descendente, luego costo ascendente.
+- **Dónde se muestra**: tabla en menú + tabla inline en resultados (con highlight de la partida actual).
+- **Funciones**: `guardarPuntaje()`, `cargarLeaderboard()`, `renderLeaderboard()`.
+
+### T6: Branding Coca-Cola
+- Usar el logo Coca-Cola (imagen por URL: `https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg` o similar CDN).
+- **Dónde**: menú (grande), resultados (mediano), briefing de ruta (pequeño).
+- La paleta roja del juego ya es Coca-Cola (#cc0000, #ff0000, etc.) — conservarla.
+- Agregar `| Coca‑Cola` al `<title>`.
 
 ---
 
-## 9. Lo que funciona (verificado)
+## 10. Lo que funciona HOY (verificado)
 
 - [x] Abre sin errores en consola
-- [x] Números canónicos (468/496/465) ✓
-- [x] Chico perfecto → P5 a 12:15 ✓
+- [x] Números canónicos (468/496/465) ✓ (van a cambiar con el refactor)
+- [x] Chico perfecto → P5 a 12:15 ✓ (ya no aplica post-refactor)
 - [x] < 5000 triángulos (~438)
 - [x] Maniobras por parada fijas (no dependen del desempeño)
 - [x] Todas las constantes en CONFIG
@@ -159,29 +226,15 @@ Más opción **🎲 Aleatoria** (ruta + semilla al azar).
 
 ---
 
-## 10. Próximos cambios planeados (pedidos del jefe)
-
-Documentados en `implementation_plan.md`. Resumen:
-
-1. **Leaderboard** — nombre del jugador + puntaje en localStorage.
-2. **Un solo camión** — eliminar selección y retorno a CEDIS.
-3. **Menos paradas** — reducir de 7 a ~4 en la canónica.
-4. **NPS del cliente** — emoji + calificación por parada según tardanza.
-5. **Límite duro de 8 horas** — si te tardas, no completas la ruta (game over a las 15:00).
-
-**Para revertir a este estado**: `git checkout pre-refactor-jefe`
-
----
-
 ## 11. Archivos del repo
 
 | Archivo | Propósito |
 |---|---|
 | `index.html` | Todo el juego (HTML + CSS + JS + Three.js) |
-| `SPEC.md` | Especificación original del juego |
+| `SPEC.md` | Especificación original (pre-refactor) |
 | `CLAUDE.md` | Contexto para asistentes de código |
 | `README.md` | Readme del repo |
-| `last.md` | Bitácora de cambios de sesiones anteriores |
+| `last.md` | Bitácora de sesiones anteriores |
 | `handoff.md` | **Este documento** |
 | `.gitignore` | Excluye `.claude/` |
 
@@ -190,15 +243,22 @@ Documentados en `implementation_plan.md`. Resumen:
 ## 12. Cómo correr
 
 ```bash
-# Opción 1: abrir directo en el navegador
+# Opción 1: abrir directo
 start index.html
 
-# Opción 2: servidor local (evita problemas de CORS con importmap)
+# Opción 2: servidor local
 npx -y serve .
-# → http://localhost:3000
 
 # Opción 3: ya desplegado
 # https://jmtoral.github.io/stay_times_the_game/
 ```
 
-No hay `npm install`, no hay build. Solo el archivo y un navegador.
+---
+
+## 13. Cómo revertir al estado pre-refactor
+
+```bash
+git checkout pre-refactor-jefe
+# o para borrar todo lo nuevo:
+git reset --hard pre-refactor-jefe
+```

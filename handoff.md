@@ -273,20 +273,34 @@ git reset --hard pre-refactor-jefe
 
 ---
 
-## 14. Recomendaciones para Backend Compartido (Leaderboard Global)
+## 14. Backend Implementado (Leaderboard Global con Cloudflare Workers)
 
-Si se desea que los puntajes se compartan entre distintos usuarios/dispositivos:
+- **Worker**: [`cloudflare-worker/worker.js`](file:///d:/PROYECTOS_PERSONALES/juego_stay_times/cloudflare-worker/worker.js)
+- **URL en Producción**: `https://stay-times-leaderboard.jmtoralcruz.workers.dev`
+- **Persistencia**: Cloudflare KV (`LEADERBOARD_KV`).
+- **Comportamiento**: En `index.html`, `CONFIG.leaderboard.apiUrl` ya está enlazado a esta URL. Almacena en `localStorage` al instante y sincroniza globalmente con el Worker.
 
-1. **Opción Serverless / BaaS (Recomendada por costo cero y rapidez)**:
-   - **Supabase o Firebase Firestore**:
-     - Integración directa vía SDK en el cliente (`<script src="..."></script>`).
-     - Colección `leaderboard` con campos `{ nombre, npsPromedio, costoTotal, estrellas, paradasEntregadas, paradasTotal, ruta, fecha, timestamp }`.
-     - Consulta para Top 10: `db.collection('leaderboard').orderBy('npsPromedio', 'desc').orderBy('costoTotal', 'asc').limit(10)`.
+---
 
-2. **Opción Edge / Worker (Ligera para GitHub Pages)**:
-   - **Cloudflare Workers + D1 o KV**:
-     - Dos endpoints REST: `GET /api/leaderboard` (devuelve top 10 en JSON) y `POST /api/score` (inserta puntaje).
-     - Completamente gratuito hasta 100k llamadas al día y latencia mínima global.
+## 15. Tareas Pendientes Prioritarias (Para Mañana)
 
-3. **Seguridad / Anti-Trampas Básica**:
-   - Para evitar que un usuario manipule el payload en consola (`fetch('/api/score', { npsPromedio: 100, costoTotal: 0 })`), se puede enviar un array resumido de maniobras/tiempos y que el backend o Worker recalcule y valide la coherencia del NPS antes de guardar.
+### 📌 1. Ajuste de Curva de NPS (Hacerlo Menos Generoso)
+- **Objetivo**: La escala actual es demasiado permisiva (tolera muchos minutos antes de bajar el puntaje). Se necesita una curva más exigente y realista donde los atrasos penalicen con mayor rigor.
+- **Propuesta de Escala Más Estricta**:
+  - $\le 0\text{ min}$ de atraso: **100%** (😍 *Encantado*)
+  - $\le 2\text{ min}$: **80%** (😊 *Satisfecho*)
+  - $\le 5\text{ min}$: **60%** (🙂 *Aceptable*)
+  - $\le 10\text{ min}$: **40%** (😐 *Neutral/Inconforme*)
+  - $\le 18\text{ min}$: **20%** (😠 *Insatisfecho*)
+  - $> 18\text{ min}$ o rechazo: **0%** (🤬 *Pésimo / Rechazado*)
+- **Ajustar**: Valores y etiquetas en `CONFIG.nps` y feedback del cliente en HUD y resultados.
+
+### 🎨 2. Rediseño Integral del Look & Feel (Avanzado / Premium)
+- **Objetivo**: Transformar el aspecto visual a un estándar corporativo de primer nivel (Coca-Cola Red Experience).
+- **Aspectos a Rediseñar**:
+  - **Tipografía**: Incorporar Google Fonts modernas (ej. `Plus Jakarta Sans`, `Outfit` o `Inter`) para títulos y números tabulares.
+  - **Diseño Visual & Glassmorphism**: Cards modernas con bordes sutiles, efectos de desenfoque translúcido (`backdrop-filter`), sombras suaves y gradientes pulidos.
+  - **HUD de Parada y Reloj**: Reorganizar la barra superior de 8 horas, reloj digital tipo odómetro/cronómetro de cabina, e indicadores de estatus más atractivos.
+  - **Minijuego de Descarga**: Rediseñar la barra de timing con un diseño más estilizado tipo velocímetro/indicador de presión industrial, aguja luminosa y efectos de partículas/flash en impacto verde.
+  - **Pantalla de Resultados**: Formato tipo *dashboard* ejecutivo de logística con KPIs destacados (medallas, gráficas limpias de barras apiladas y tabla interactiva estilizada).
+  - **Microinteracciones y Animaciones**: Transiciones suaves al cambiar de pantalla, efectos hover/active con respuesta táctil visual y toasts más elegantes.

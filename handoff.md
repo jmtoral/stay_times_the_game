@@ -1,6 +1,6 @@
 # Handoff — Stay Time: Simulador de jornada de reparto
 
-**Fecha**: 2026-08-28  
+**Fecha**: 2026-08-28 (actualizado 2026-08-28 sesión 2)  
 **Tag de respaldo**: `pre-refactor-jefe` (commit `f54199a`)  
 **Repo**: https://github.com/jmtoral/stay_times_the_game  
 **URL en vivo**: https://jmtoral.github.io/stay_times_the_game/
@@ -23,32 +23,36 @@ Partida activa: 3–4 minutos.
 
 | Componente | Detalle |
 |---|---|
-| Entrega | Un solo archivo `index.html`, sin build step |
-| 3D | Three.js r160 por CDN (`importmap` ES module) |
-| Geometría | 100% procedural (~438 triángulos), sin modelos externos |
-| HUD | HTML/CSS plano superpuesto al canvas |
+| Entrega | `index.html` + `beverage-delivery-truck.obj` (2 archivos), sin build step |
+| 3D | Three.js r160 por CDN (`importmap` ES module) + OBJLoader |
+| Geometría | Camión: modelo OBJ (~6,312 tris), escena: procedural (~500 tris). Fallback procedural si OBJ no carga |
+| HUD | HTML/CSS glassmorphism superpuesto al canvas |
+| Tipografía | Google Fonts: Plus Jakarta Sans (400–800) |
+| Tema visual | Dark premium con backdrop-filter, glow accents, ACES Filmic tone mapping |
 | Cámara | Isométrica fija, sin controles de órbita |
 | RNG | Mulberry32 con semilla fija para reproducibilidad |
-| Persistencia | Ninguna actualmente (se va a agregar localStorage para leaderboard) |
+| Persistencia | localStorage + Cloudflare Workers KV (leaderboard global) |
 
 ---
 
-## 3. Estructura del archivo `index.html` (estado ACTUAL, pre-refactor)
+## 3. Estructura del archivo `index.html` (estado ACTUAL, post-redesign)
 
 ```
-Líneas ~1–152      CSS (variables, layout, screens, minijuego, resultados)
-Líneas ~154–252    HTML (canvas 3D + 5 pantallas HUD: menu, seleccion, hud, minijuego, resultados)
-Líneas ~254–392    CONFIG (todas las constantes tuneables)
-Líneas ~398–408    RNG mulberry32
-Líneas ~410–456    Helpers (ruta activa, retornos, tiempo, canal de venta)
-Líneas ~458–582    Modelo de cálculo (stayTimeParada, calcularPlan, simularJornada, calcularCostos)
-Líneas ~584–606    Estado global G
-Líneas ~608–826    Three.js (escena, camión, edificio destino, geocerca, loop render)
-Líneas ~828–1129   Máquina de estados (menu, selección, traslado, parada, retorno, resultados)
-Líneas ~1131–1225  Minijuego de descarga (aguja, zonas, resolver maniobra)
-Líneas ~1227–1237  Toasts / avisos
-Líneas ~1239–1406  Pantalla de resultados (tabla plan/real, desglose, contrafactual, consejo)
-Líneas ~1408–1468  Input (teclado/touch), selector de rutas, arranque
+Líneas ~1–10       Head (meta, fonts, importmap con Three.js + OBJLoader)
+Líneas ~11–240     CSS premium (dark theme, glassmorphism, animaciones, variables)
+Líneas ~241–330    HTML (canvas 3D + 5 pantallas HUD: menu, briefing, hud, minijuego, resultados)
+Líneas ~332–470    CONFIG (constantes tuneables, NPS estricto)
+Líneas ~472–482    RNG mulberry32
+Líneas ~484–530    Helpers (ruta activa, tiempo, canal de venta)
+Líneas ~532–600    NPS + Leaderboard (localStorage + Cloudflare Worker sync)
+Líneas ~602–700    Modelo de cálculo (stayTimeParada, calcularPlan, simularJornada, calcularCostos)
+Líneas ~702–730    Estado global G
+Líneas ~732–920    Three.js (escena dark, OBJ loader + fallback procedural, destino, geocerca, loop)
+Líneas ~922–1200   Máquina de estados (menu, briefing, traslado, parada, resultados)
+Líneas ~1202–1310  Minijuego de descarga (aguja con glow, zonas, resolver maniobra)
+Líneas ~1312–1340  Toasts con animación
+Líneas ~1342–1530  Pantalla de resultados (dashboard ejecutivo, KPI hero, NPS badge)
+Líneas ~1532–1600  Input (teclado/touch), selector de rutas, arranque
 ```
 
 ---
@@ -224,14 +228,18 @@ Todas las tareas descritas a continuación ya fueron codificadas e integradas en
 - [x] Abre sin errores en consola
 - [x] 1 solo camión automatizado (sin pantallas redundantes)
 - [x] 5 paradas con balanceo ajustado de 8 horas
-- [x] NPS calculado por parada en escala 0%–100% y promedio ponderado
+- [x] NPS calculado por parada en escala ESTRICTA 0%–100% (≤0→100%, ≤2→80%, ≤5→60%, ≤10→40%, ≤18→20%, >18→0%)
 - [x] Corte de jornada a las 15:00 con penalización por no entrega (sin crash)
-- [x] Leaderboard local persistente en `localStorage` con Top 10
+- [x] Leaderboard local + global (Cloudflare Workers KV)
 - [x] Branding Coca-Cola integrado en menús y HUD
-- [x] < 5000 triángulos (~438)
+- [x] Camión 3D cargado desde `beverage-delivery-truck.obj` (~6,312 tris) con fallback procedural
 - [x] Maniobras por parada fijas (no dependen del desempeño)
 - [x] Todas las constantes en CONFIG
 - [x] RNG reproducible
+- [x] **Tema visual dark premium**: Plus Jakarta Sans, glassmorphism, backdrop-filter, glow accents
+- [x] **Micro-animaciones**: fadeIn, slideUp, slideDown, needleGlow, toastIn, npsReveal, starPop, barGrow
+- [x] **ACES Filmic tone mapping** + rim light para escena 3D dramática
+- [x] **Materiales 3D mejorados**: metalness/roughness realistas para el camión OBJ
 
 ---
 
@@ -240,10 +248,12 @@ Todas las tareas descritas a continuación ya fueron codificadas e integradas en
 | Archivo | Propósito |
 |---|---|
 | `index.html` | Todo el juego (HTML + CSS + JS + Three.js) |
+| `beverage-delivery-truck.obj` | Modelo 3D del camión (150 objetos, 6,312 tris, 7 materiales) |
 | `SPEC.md` | Especificación original (pre-refactor) |
 | `CLAUDE.md` | Contexto para asistentes de código |
 | `README.md` | Readme del repo |
 | `handoff.md` | **Este documento** |
+| `cloudflare-worker/` | Worker para leaderboard global (KV) |
 | `.gitignore` | Excluye `.claude/` |
 
 ---
@@ -282,25 +292,37 @@ git reset --hard pre-refactor-jefe
 
 ---
 
-## 15. Tareas Pendientes Prioritarias (Para Mañana)
+## 15. Tareas Completadas (Sesión 2 — 2026-08-28)
 
-### 📌 1. Ajuste de Curva de NPS (Hacerlo Menos Generoso)
-- **Objetivo**: La escala actual es demasiado permisiva (tolera muchos minutos antes de bajar el puntaje). Se necesita una curva más exigente y realista donde los atrasos penalicen con mayor rigor.
-- **Propuesta de Escala Más Estricta**:
-  - $\le 0\text{ min}$ de atraso: **100%** (😍 *Encantado*)
-  - $\le 2\text{ min}$: **80%** (😊 *Satisfecho*)
-  - $\le 5\text{ min}$: **60%** (🙂 *Aceptable*)
-  - $\le 10\text{ min}$: **40%** (😐 *Neutral/Inconforme*)
-  - $\le 18\text{ min}$: **20%** (😠 *Insatisfecho*)
-  - $> 18\text{ min}$ o rechazo: **0%** (🤬 *Pésimo / Rechazado*)
-- **Ajustar**: Valores y etiquetas en `CONFIG.nps` y feedback del cliente en HUD y resultados.
+### ✅ 1. Sistema de Puntuación Granular y Combos — COMPLETADO
+- Puntuación en tiempo real en HUD (`🏆 1,938 pts`) con multiplicador de combo (`🔥 x1.25 COMBO (2)`).
+- **Puntos por Maniobra**: Diana perfecta (`1,000 pts`), Verde óptimo (`750 pts`), Amarillo (`350 pts`), Rojo (`100 pts`).
+- **Bonus al Cierre**: Satisfacción NPS (`NPS% × 500`), Ahorro de tiempo (`100 pts/min`), Paradas completadas (`2,000 pts/parada`).
+- **Leaderboard**: Ahora ordena por Puntos Totales descendente como métrica primaria para desempatar y discriminar claramente entre jugadores.
 
-### 🎨 2. Rediseño Integral del Look & Feel (Avanzado / Premium)
-- **Objetivo**: Transformar el aspecto visual a un estándar corporativo de primer nivel (Coca-Cola Red Experience).
-- **Aspectos a Rediseñar**:
-  - **Tipografía**: Incorporar Google Fonts modernas (ej. `Plus Jakarta Sans`, `Outfit` o `Inter`) para títulos y números tabulares.
-  - **Diseño Visual & Glassmorphism**: Cards modernas con bordes sutiles, efectos de desenfoque translúcido (`backdrop-filter`), sombras suaves y gradientes pulidos.
-  - **HUD de Parada y Reloj**: Reorganizar la barra superior de 8 horas, reloj digital tipo odómetro/cronómetro de cabina, e indicadores de estatus más atractivos.
-  - **Minijuego de Descarga**: Rediseñar la barra de timing con un diseño más estilizado tipo velocímetro/indicador de presión industrial, aguja luminosa y efectos de partículas/flash en impacto verde.
-  - **Pantalla de Resultados**: Formato tipo *dashboard* ejecutivo de logística con KPIs destacados (medallas, gráficas limpias de barras apiladas y tabla interactiva estilizada).
-  - **Microinteracciones y Animaciones**: Transiciones suaves al cambiar de pantalla, efectos hover/active con respuesta táctil visual y toasts más elegantes.
+### ✅ 2. Calibración del NPS (Hacerlo bien SÍ sube el NPS) — COMPLETADO
+- Se calibró la expectativa del plan para que las paradas con acceso estrecho contemplen la dificultad estructural, permitiendo que la habilidad y rapidez del chofer sean premiadas con **90% – 100% NPS** en lugar de castigarlo injustamente.
+- Las maniobras verdes aportan ahorro neto de tiempo frente al estándar, reflejando de inmediato estados de satisfacción `😍 NPS 100% · Encantado` y `😊 NPS 92% · Muy satisfecho`.
+
+### ✅ 3. Estrellas Alineadas Directamente al NPS — COMPLETADO
+- Se reemplazó el cálculo de estrellas basado en costo por una escala directa según el NPS del turno:
+  - **≥ 90% NPS** → ★★★★★ (5 estrellas)
+  - **75% – 89% NPS** → ★★★★☆ (4 estrellas)
+  - **60% – 74% NPS** → ★★★☆☆ (3 estrellas)
+  - **40% – 59% NPS** → ★★☆☆☆ (2 estrellas)
+  - **< 40% NPS** o ruta truncada → ★☆☆☆☆ (1 estrella)
+
+### ✅ 4. Rediseño Look & Feel y Camión OBJ 3D — COMPLETADO
+- Modelo `beverage-delivery-truck.obj` cargado con 7 materiales realistas, rotación alineada (`rotation.y = 0`) para avanzar de frente.
+- Pantalla nítida y brillante durante la dinámica: `#minijuego` anclado abajo sin difuminar el 3D y con niebla Three.js optimizada.
+
+---
+
+## 16. Posibles Mejoras Futuras
+
+- Sonido / SFX para maniobras y transiciones
+- Partículas al aterrizar maniobra verde
+- Animación de puertas del camión abriéndose durante la descarga
+- PWA con service worker para jugar offline
+- Modo nocturno vs diurno según hora del juego
+- Dashboard de instructor (múltiples jugadores)

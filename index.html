@@ -4,34 +4,68 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Stay Time — Simulador de jornada de reparto | Coca‑Cola</title>
+<meta name="description" content="Serious game de logística para operaciones de reparto Coca-Cola. Aprende a optimizar el Stay Time y la jornada de 8 horas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <!-- Three.js: versión FIJA vía importmap ES module. En r160 three.module.js es
      autocontenido (no hay three.core.js). URL verificada 200 antes de fijarla. -->
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
   }
 }
 </script>
 
 <style>
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pulseGlow { 0%,100%{box-shadow:0 0 20px rgba(255,0,0,.15)} 50%{box-shadow:0 0 40px rgba(255,0,0,.35)} }
+  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  @keyframes needleGlow { 0%,100%{filter:drop-shadow(0 0 4px rgba(255,255,255,.6))} 50%{filter:drop-shadow(0 0 10px rgba(255,255,255,1))} }
+  @keyframes toastIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes npsReveal { from{opacity:0;transform:scale(.6)} to{opacity:1;transform:scale(1)} }
+  @keyframes starPop { 0%{transform:scale(0)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+  @keyframes barGrow { from{width:0} }
+  @keyframes countUp { from{opacity:.3} to{opacity:1} }
+
   :root{
-    /* Paleta roja corporativa Coca-Cola */
+    /* Paleta Coca-Cola premium */
     --red-50:#ffe5e5; --red-100:#ffcccc; --red-200:#ff9999; --red-300:#ff6666;
     --red-400:#ff3333; --red-500:#ff0000; --red-600:#cc0000; --red-700:#990000;
-    --red-800:#660000; --red-900:#330000; --red-950:#240000;
+    --red-800:#660000; --red-900:#330000; --red-950:#1a0000;
 
-    --bg:#f2ebeb; --panel:#ffffff; --panel2:#f7efef; --line:#e2d0d0;
-    --txt:#2a1414; --muted:#8a6a6a; --accent:var(--red-600);
-    --c-traslado:#d97706; --c-stay:#0d9488; --c-retorno:#7c3aed;
-    --c-extra:var(--red-600); --c-cedis:#caa6a6;
-    --verde:#16a34a; --amarillo:#ca8a04; --rojo:#dc2626;
-    --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+    /* Dark premium theme */
+    --bg:#0f0a0a; --bg-elevated:#1a1212; --bg-surface:#241a1a;
+    --panel:rgba(36,26,26,.85); --panel-solid:#241a1a; --panel2:rgba(42,30,30,.9);
+    --line:rgba(255,255,255,.08); --line-accent:rgba(204,0,0,.3);
+    --txt:#f5eded; --txt-secondary:#c4a8a8; --muted:#8a6a6a; --accent:var(--red-600);
+    --accent-glow:rgba(204,0,0,.25);
+
+    --c-traslado:#e8a020; --c-stay:#14b8a6; --c-retorno:#a855f7;
+    --c-extra:#ef4444; --c-cedis:rgba(180,140,140,.6);
+    --verde:#22c55e; --amarillo:#eab308; --rojo:#ef4444;
+    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+
+    /* Glass effect */
+    --glass-bg:rgba(26,18,18,.72); --glass-border:rgba(255,255,255,.06);
+    --glass-blur:20px;
+
+    /* Typography */
+    --font:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:'SF Mono',Monaco,'Cascadia Code',Consolas,monospace;
+
+    /* Spacing */
+    --radius:14px; --radius-lg:20px; --radius-sm:8px;
   }
+
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{ margin:0; height:100%; background:var(--bg); color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:var(--font); font-weight:500;
     overflow:hidden; touch-action:manipulation; }
   #canvas3d{ position:fixed; inset:0; width:100%; height:100%; display:block; z-index:0; }
 
@@ -41,121 +75,315 @@
   .screen.on{ display:flex; }
   .interactivo{ pointer-events:auto; }
 
-  h1,h2,h3{ margin:0 0 .4em; font-weight:700; letter-spacing:.2px; }
+  h1,h2,h3{ margin:0 0 .4em; font-weight:800; letter-spacing:-.02em; }
   .muted{ color:var(--muted); }
-  .card{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; }
-  button{ font:inherit; color:var(--txt); background:var(--panel2);
-    border:1px solid var(--line); border-radius:10px; padding:12px 18px;
-    cursor:pointer; min-height:48px; }
-  button.primary{ background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
-  button:active{ transform:translateY(1px); }
+  .txt-secondary{ color:var(--txt-secondary); }
+
+  .card{
+    background:var(--glass-bg);
+    backdrop-filter:blur(var(--glass-blur));
+    -webkit-backdrop-filter:blur(var(--glass-blur));
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius);
+    padding:20px;
+    transition:border-color .3s, box-shadow .3s;
+  }
+  .card:hover{ border-color:rgba(255,255,255,.1); }
+  .card-accent{
+    border-color:var(--line-accent);
+    box-shadow:0 0 30px var(--accent-glow), inset 0 0 30px rgba(204,0,0,.05);
+  }
+
+  button{
+    font:inherit; font-weight:600; color:var(--txt);
+    background:var(--panel2);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius-sm);
+    padding:12px 20px;
+    cursor:pointer; min-height:48px;
+    transition:all .2s ease;
+  }
+  button:hover{ background:rgba(60,40,40,.9); border-color:rgba(255,255,255,.12);
+    transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,.3); }
+  button:active{ transform:translateY(0); }
+  button.primary{
+    background:linear-gradient(135deg, var(--red-600), var(--red-700));
+    color:#fff; border-color:var(--red-700); font-weight:700;
+    box-shadow:0 4px 20px rgba(204,0,0,.3);
+  }
+  button.primary:hover{
+    background:linear-gradient(135deg, var(--red-500), var(--red-600));
+    box-shadow:0 6px 28px rgba(204,0,0,.45);
+    transform:translateY(-2px);
+  }
+
   table{ border-collapse:collapse; width:100%; font-size:13px; }
-  th,td{ border:1px solid var(--line); padding:6px 8px; text-align:right; }
+  th,td{ border:1px solid var(--line); padding:8px 10px; text-align:right; }
   th:first-child,td:first-child{ text-align:left; }
-  th{ background:var(--panel2); color:var(--muted); font-weight:600; }
+  th{ background:rgba(255,255,255,.03); color:var(--muted); font-weight:600; font-size:11px;
+    text-transform:uppercase; letter-spacing:.05em; }
   .scroll{ overflow:auto; -webkit-overflow-scrolling:touch; }
 
   /* ---------- MENU ---------- */
-  #menu{ align-items:center; justify-content:center; text-align:center; padding:24px;
-    background:radial-gradient(1200px 600px at 50% -10%, #ffd9d9 0%, var(--bg) 60%); overflow:auto; }
-  #menu .card{ max-width:560px; }
-  #menu h1{ font-size:28px; }
-  .obj{ text-align:left; margin:14px 0; color:var(--muted); font-size:14px; line-height:1.5; }
-  .coca-logo{ height:44px; margin-bottom:10px; display:block; margin-left:auto; margin-right:auto; }
-  .coca-logo-sm{ height:26px; vertical-align:middle; }
-  #nombreInput{ font:inherit; color:var(--txt); background:var(--panel2);
-    border:1px solid var(--line); border-radius:8px; padding:10px 12px;
-    min-height:44px; width:200px; text-align:center; }
-  #nombreInput:focus{ outline:2px solid var(--accent); }
+  #menu{
+    align-items:center; justify-content:center; text-align:center; padding:24px;
+    background:radial-gradient(ellipse 900px 500px at 50% 30%, rgba(204,0,0,.12) 0%, transparent 70%),
+               radial-gradient(ellipse 600px 400px at 50% 80%, rgba(204,0,0,.06) 0%, transparent 60%);
+    overflow:auto;
+  }
+  #menu .card{
+    max-width:520px; width:100%;
+    animation:fadeIn .6s ease-out;
+  }
+  #menu h1{
+    font-size:36px; font-weight:800;
+    background:linear-gradient(135deg, #fff 30%, var(--red-300));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .coca-logo{ height:44px; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;
+    filter:brightness(1.1); }
+  .coca-logo-sm{ height:26px; vertical-align:middle; filter:brightness(1.1); }
+
+  .obj{
+    text-align:left; margin:16px 0; color:var(--txt-secondary); font-size:13px; line-height:1.65;
+    background:rgba(255,255,255,.03); border-radius:var(--radius-sm); padding:14px 16px;
+    border:1px solid var(--line);
+  }
+
+  #nombreInput{
+    font:inherit; font-weight:600; color:var(--txt); background:var(--bg-surface);
+    border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 14px;
+    min-height:44px; width:200px; text-align:center;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  #nombreInput:focus{
+    outline:none; border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-glow);
+  }
+
+  .subtitle-tag{
+    display:inline-block; font-size:12px; font-weight:600; color:var(--txt-secondary);
+    background:rgba(255,255,255,.05); border:1px solid var(--line);
+    border-radius:999px; padding:4px 14px; letter-spacing:.03em;
+  }
 
   /* ---------- BRIEFING ---------- */
-  #briefing{ padding:18px; overflow:auto; }
-  .infoRuta{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
-  .chip{ background:var(--panel2); border:1px solid var(--line); border-radius:999px;
-    padding:6px 12px; font-size:13px; }
+  #briefing{ padding:20px; overflow:auto;
+    background:radial-gradient(ellipse 800px 400px at 50% 10%, rgba(204,0,0,.08) 0%, transparent 60%); }
+  #briefing .card{ animation:slideUp .5s ease-out both; }
+  #briefing .card:nth-child(2){ animation-delay:.1s; }
+  #briefing .card:nth-child(3){ animation-delay:.2s; }
+  .infoRuta{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .chip{
+    background:rgba(255,255,255,.05); border:1px solid var(--line);
+    border-radius:999px; padding:6px 14px; font-size:12px; font-weight:500;
+    color:var(--txt-secondary);
+    transition:border-color .2s;
+  }
+  .chip:hover{ border-color:rgba(255,255,255,.15); }
   .warnTxt{ color:var(--warn); }
 
   /* ---------- HUD juego ---------- */
-  #hud{ pointer-events:none; }
-  #barraTop{ position:absolute; top:0; left:0; right:0; padding:10px 12px;
-    background:linear-gradient(#f2ebebf2,#f2ebebcc,transparent); }
-  .relojFila{ display:flex; align-items:baseline; gap:10px; margin-bottom:6px; }
-  #horaDia{ font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; }
-  #estadoReloj{ font-size:12px; color:var(--muted); }
-  #jornadaBar{ position:relative; height:20px; background:#ece0e0; border:1px solid var(--line);
-    border-radius:6px; overflow:hidden; display:flex; }
-  #jornadaBar .seg{ height:100%; }
-  #linea15{ position:absolute; top:-3px; bottom:-3px; width:2px; background:rgba(0,0,0,.4); }
-  #linea15 .lbl{ position:absolute; top:-14px; left:-14px; font-size:9px; color:#fff; }
-  #marcaAhora{ position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--accent); }
-  .leyenda{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; font-size:10px; color:var(--muted); }
-  .leyenda i{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:3px; vertical-align:middle; }
+  #hud{ pointer-events:none; background:none; }
+  #barraTop{
+    position:absolute; top:0; left:0; right:0; padding:12px 16px;
+    background:linear-gradient(to bottom, rgba(15,10,10,.9) 0%, rgba(15,10,10,.5) 70%, transparent 100%);
+    pointer-events:auto;
+  }
+  .relojFila{ display:flex; align-items:baseline; gap:12px; margin-bottom:8px; }
+  #horaDia{
+    font-size:32px; font-weight:800; font-variant-numeric:tabular-nums;
+    font-family:var(--mono);
+    letter-spacing:.02em;
+  }
+  #estadoReloj{ font-size:12px; color:var(--muted); font-weight:500; }
 
-  #panelParada{ position:absolute; top:96px; left:12px; width:min(300px,54vw);
-    background:#ffffffef; box-shadow:0 4px 16px #0000001a; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:13px; }
-  #panelParada h3{ font-size:14px; }
-  .kv{ display:flex; justify-content:space-between; gap:8px; margin:3px 0; }
+  #jornadaBar{
+    position:relative; height:24px;
+    background:rgba(255,255,255,.05);
+    border:1px solid var(--line); border-radius:var(--radius-sm);
+    overflow:hidden; display:flex;
+  }
+  #jornadaBar .seg{ height:100%; transition:width .3s ease; }
+  #linea15{
+    position:absolute; top:-3px; bottom:-3px; width:2px;
+    background:rgba(255,255,255,.5);
+    box-shadow:0 0 6px rgba(255,255,255,.3);
+  }
+  #linea15 .lbl{
+    position:absolute; top:-16px; left:-14px; font-size:9px;
+    color:rgba(255,255,255,.6); font-weight:600;
+  }
+  #marcaAhora{
+    position:absolute; top:-4px; bottom:-4px; width:3px;
+    background:var(--accent);
+    box-shadow:0 0 8px var(--accent), 0 0 16px rgba(204,0,0,.3);
+    border-radius:2px;
+    transition:left .3s ease;
+  }
+  .leyenda{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:10px; color:var(--muted);
+    font-weight:500; }
+  .leyenda i{
+    display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px;
+    vertical-align:middle;
+  }
+
+  #panelParada{
+    position:absolute; top:104px; left:14px; width:min(320px,56vw);
+    background:var(--glass-bg);
+    backdrop-filter:blur(var(--glass-blur));
+    -webkit-backdrop-filter:blur(var(--glass-blur));
+    box-shadow:0 8px 32px rgba(0,0,0,.4);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius);
+    padding:14px 16px; font-size:13px;
+    animation:slideDown .4s ease-out;
+    pointer-events:auto;
+  }
+  #panelParada h3{ font-size:14px; font-weight:700; }
+  .kv{ display:flex; justify-content:space-between; gap:8px; margin:4px 0; }
   .kv b{ font-variant-numeric:tabular-nums; }
-  #etqDificultad{ margin-top:8px; font-size:11px; color:var(--warn); min-height:14px; }
+  #etqDificultad{ margin-top:8px; font-size:11px; color:var(--warn); min-height:14px; font-weight:500; }
 
   /* NPS en vivo en el panel */
-  #npsVivo{ margin-top:6px; font-size:20px; text-align:center; min-height:28px; }
+  #npsVivo{
+    margin-top:8px; font-size:20px; text-align:center; min-height:28px;
+    font-weight:700;
+  }
 
   /* toasts / avisos */
-  #avisos{ position:absolute; top:96px; right:12px; width:min(300px,54vw);
+  #avisos{ position:absolute; top:104px; right:14px; width:min(300px,52vw);
     display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
-  .toast{ background:#ffffff; box-shadow:0 4px 16px #0000001f; border:1px solid var(--line); border-radius:10px; padding:8px 12px;
-    font-size:12px; color:var(--txt); max-width:100%; }
-  .toast.bad{ background:#ffe9e9; border-color:var(--red-400); color:#7a0000; }
-  .toast.ok{ background:#dcfce7; border-color:#16a34a; color:#14532d; }
+  .toast{
+    background:var(--glass-bg);
+    backdrop-filter:blur(var(--glass-blur));
+    box-shadow:0 4px 20px rgba(0,0,0,.4);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius-sm);
+    padding:10px 14px; font-size:12px; color:var(--txt);
+    max-width:100%;
+    animation:toastIn .4s ease-out;
+    transition:opacity .5s;
+    pointer-events:auto;
+  }
+  .toast.bad{ border-color:rgba(239,68,68,.4); background:rgba(60,15,15,.85); color:#fca5a5; }
+  .toast.ok{ border-color:rgba(34,197,94,.4); background:rgba(15,40,20,.85); color:#86efac; }
 
-  /* resumen desviación 2s — ahora incluye NPS emoji */
-  #resumenDesv{ position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
-    background:#ffffffee; box-shadow:0 8px 30px #0000002a; border:1px solid var(--line); border-radius:14px; padding:18px 22px;
-    text-align:center; display:none; }
-  #resumenDesv.on{ display:block; }
+  /* resumen desviación — NPS emoji reveal */
+  #resumenDesv{
+    position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
+    background:var(--glass-bg);
+    backdrop-filter:blur(24px);
+    box-shadow:0 12px 48px rgba(0,0,0,.5), 0 0 40px var(--accent-glow);
+    border:1px solid var(--line-accent);
+    border-radius:var(--radius-lg);
+    padding:24px 28px; text-align:center;
+    display:none;
+    pointer-events:auto;
+  }
+  #resumenDesv.on{ display:block; animation:npsReveal .4s ease-out; }
   #resumenDesv .big{ font-size:22px; font-weight:800; }
-  .nps-emoji{ font-size:48px; line-height:1; }
-  .nps-label{ font-size:14px; font-weight:700; margin-top:4px; }
+  .nps-emoji{ font-size:56px; line-height:1; }
+  .nps-label{ font-size:15px; font-weight:700; margin-top:6px; }
 
-  /* ---------- MINIJUEGO (anclado abajo del todo) ---------- */
-  #minijuego{ position:absolute; left:0; right:0; bottom:0;
-    padding:8px 12px calc(8px + env(safe-area-inset-bottom));
-    justify-content:flex-end; background:none; }
-  #mjInfo{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
-  #mjContador{ font-size:15px; font-weight:700; text-shadow:0 1px 3px #f2ebeb,0 0 8px #f2ebeb; }
-  #mjZonaTxt{ font-size:12px; color:var(--muted); text-shadow:0 1px 3px #f2ebeb,0 0 8px #f2ebeb; }
-  #mjBarra{ position:relative; height:52px; border-radius:8px; overflow:hidden;
-    border:1px solid var(--line); box-shadow:0 4px 16px #0000002e; }
-  #mjAguja{ position:absolute; top:-3px; bottom:-3px; width:4px; background:#fff;
-    box-shadow:0 0 0 1.5px #0009, 0 0 6px #0006; border-radius:2px; }
-  #mjFeedback{ text-align:center; font-size:20px; font-weight:800; min-height:26px; margin-top:4px;
-    text-shadow:0 1px 3px #f2ebeb,0 0 8px #f2ebeb; }
-  #mjControles{ display:flex; gap:10px; margin-top:6px; align-items:center; }
-  #btnDescargar{ flex:1; min-height:64px; font-size:17px; font-weight:800;
-    box-shadow:0 4px 16px #cc000040; }
-  #mjHint{ font-size:11px; color:var(--muted); text-shadow:0 1px 2px #f2ebeb; }
+  /* ---------- MINIJUEGO (anclado abajo, sin tapar el 3D ni empañar la pantalla) ---------- */
+  #minijuego{
+    position:absolute; left:0; right:0; bottom:0; top:auto;
+    height:auto;
+    padding:14px 18px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, rgba(15,10,10,.95) 0%, rgba(15,10,10,.8) 70%, transparent 100%);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    pointer-events:none;
+    z-index:20;
+  }
+  #minijuego > *{ pointer-events:auto; }
+  #mjInfo{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+  #mjContador{ font-size:16px; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  #mjZonaTxt{ font-size:12px; color:var(--txt-secondary); font-weight:500; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+
+  #mjBarra{
+    position:relative; height:56px;
+    border-radius:var(--radius-sm);
+    overflow:hidden;
+    border:2px solid rgba(255,255,255,.2);
+    box-shadow:0 6px 28px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.15);
+  }
+  #mjAguja{
+    position:absolute; top:-4px; bottom:-4px; width:5px;
+    background:#ffffff;
+    box-shadow:0 0 14px #ffffff, 0 0 6px #ffffff, 0 0 20px rgba(255,255,255,.9);
+    border-radius:3px;
+    animation:needleGlow 1.2s ease-in-out infinite;
+  }
+  #mjFeedback{
+    text-align:center; font-size:20px; font-weight:800; min-height:28px; margin-top:6px;
+    text-shadow:0 2px 8px rgba(0,0,0,.8);
+  }
+  #mjControles{ display:flex; gap:10px; margin-top:8px; align-items:center; }
+  #btnDescargar{
+    flex:1; min-height:60px; font-size:18px; font-weight:800;
+    box-shadow:0 4px 24px rgba(204,0,0,.5);
+    letter-spacing:.02em;
+  }
+  #mjHint{ font-size:11px; color:var(--muted); font-weight:400; text-shadow:0 1px 4px rgba(0,0,0,.8); }
 
   /* ---------- RESULTADOS ---------- */
-  #resultados{ padding:16px; overflow:auto; }
+  #resultados{
+    padding:20px; overflow:auto;
+    background:radial-gradient(ellipse 900px 500px at 50% 20%, rgba(204,0,0,.08) 0%, transparent 60%);
+  }
   #resultados .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media(max-width:720px){ #resultados .grid2{ grid-template-columns:1fr; } }
-  .cierreBig{ font-size:34px; font-weight:800; }
-  .estrellas{ font-size:26px; letter-spacing:2px; }
-  .stack{ display:flex; height:26px; border-radius:6px; overflow:hidden; border:1px solid var(--line); margin:8px 0; }
-  .stack .s{ height:100%; }
+
+  .kpi-hero{
+    text-align:center; padding:28px 24px;
+    animation:fadeIn .6s ease-out;
+  }
+  .kpi-hero .cierreBig{
+    font-size:48px; font-weight:800;
+    font-family:var(--mono);
+    letter-spacing:.04em;
+  }
+  .kpi-hero .estrellas{
+    font-size:30px; letter-spacing:4px; margin-top:8px;
+    animation:starPop .5s ease-out both;
+  }
+  .kpi-hero .nps-badge{
+    display:inline-block; font-size:32px; font-weight:800;
+    padding:6px 20px; border-radius:999px; margin-top:10px;
+    background:rgba(255,255,255,.06); border:1px solid var(--line);
+  }
+
+  .stack{ display:flex; height:28px; border-radius:var(--radius-sm); overflow:hidden;
+    border:1px solid var(--line); margin:10px 0;
+    background:rgba(255,255,255,.03); }
+  .stack .s{ height:100%; animation:barGrow .8s ease-out both; }
   .pos{ color:var(--ok); } .neg{ color:var(--bad); } .zero{ color:var(--muted); }
-  .consejo{ border-left:4px solid var(--accent); padding-left:12px; }
+  .consejo{
+    border-left:3px solid var(--accent); padding-left:16px;
+    background:rgba(204,0,0,.05);
+  }
   .sub{ font-size:12px; color:var(--muted); }
 
   /* ---------- LEADERBOARD ---------- */
-  #leaderboardSection{ margin-top:16px; text-align:left; }
+  #leaderboardSection{ margin-top:18px; text-align:left; }
   .lb-table{ width:100%; border-collapse:collapse; font-size:12px; }
-  .lb-table th,.lb-table td{ border:1px solid var(--line); padding:5px 7px; text-align:center; }
-  .lb-table th{ background:var(--panel2); color:var(--muted); font-weight:600; font-size:11px; }
+  .lb-table th,.lb-table td{ border:1px solid var(--line); padding:6px 8px; text-align:center; }
+  .lb-table th{
+    background:rgba(255,255,255,.03); color:var(--muted); font-weight:600; font-size:10px;
+    text-transform:uppercase; letter-spacing:.05em;
+  }
   .lb-table td:first-child{ text-align:center; font-weight:700; }
-  .lb-highlight{ background:#fff8e1 !important; }
-  .lb-empty{ color:var(--muted); font-style:italic; text-align:center; padding:12px; font-size:13px; }
+  .lb-highlight{ background:rgba(204,0,0,.1) !important; border-color:var(--line-accent) !important; }
+  .lb-empty{ color:var(--muted); font-style:italic; text-align:center; padding:16px; font-size:13px; }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar{ width:6px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.1); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.2); }
 </style>
 </head>
 <body>
@@ -165,34 +393,34 @@
 
   <!-- ============ MENU ============ -->
   <div class="screen on" id="menu">
-    <div class="card">
+    <div class="card" style="animation:fadeIn .6s ease-out">
       <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
            alt="Coca‑Cola" class="coca-logo"
-           onerror="this.outerHTML='<div style=color:var(--red-600);font-size:28px;font-weight:800;font-style:italic;margin-bottom:10px>Coca‑Cola</div>'">
+           onerror="this.outerHTML='<div style=color:var(--red-400);font-size:28px;font-weight:800;font-style:italic;margin-bottom:10px>Coca‑Cola</div>'">
       <h1>Stay Time</h1>
-      <div class="muted">Simulador de jornada de reparto · Operaciones</div>
+      <div class="subtitle-tag">Simulador de jornada de reparto · Operaciones</div>
       <div class="obj">
-        <b>Qué vas a decidir y ejecutar:</b><br>
+        <b style="color:var(--txt)">Qué vas a decidir y ejecutar:</b><br>
         1. Descargar con precisión (el timing cambia cuánto tardas, no cuánto bajas).<br>
         2. Cerrar la jornada dentro del presupuesto de 8 horas (07:00 → 15:00).<br>
         3. Mantener la satisfacción del cliente: si te tardas, el NPS baja.<br><br>
         El Stay Time es costo fijo de estacionamiento + atención al cliente (que la
         habilidad NO acelera) + descarga variable. ¡Que no se te acabe el tiempo!
       </div>
-      <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:10px; flex-wrap:wrap">
+      <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:12px; flex-wrap:wrap">
         <label class="muted" for="nombreInput">Tu nombre:</label>
         <input id="nombreInput" class="interactivo" placeholder="Ej: Juan Pérez" maxlength="20">
       </div>
       <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:14px; flex-wrap:wrap">
         <label class="muted" for="selRuta">Ruta:</label>
         <select id="selRuta" class="interactivo"
-          style="font:inherit; color:var(--txt); background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; min-height:44px"></select>
+          style="font:inherit; font-weight:600; color:var(--txt); background:var(--bg-surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:8px 12px; min-height:44px"></select>
       </div>
       <div class="sub" id="selRutaDesc" style="margin-bottom:14px">&nbsp;</div>
       <button class="primary interactivo" id="btnEmpezar">Empezar jornada</button>
 
       <div id="leaderboardSection">
-        <h3 style="margin-top:16px">🏆 Leaderboard</h3>
+        <h3 style="margin-top:18px; font-size:16px">🏆 Leaderboard</h3>
         <div id="lbMenu"></div>
       </div>
     </div>
@@ -200,25 +428,31 @@
 
   <!-- ============ BRIEFING DE RUTA ============ -->
   <div class="screen" id="briefing">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
            alt="Coca‑Cola" class="coca-logo-sm"
            onerror="this.style.display='none'">
       <h2 style="margin:0">Briefing de ruta</h2>
     </div>
-    <div class="muted" style="margin-bottom:10px">Revisa los datos de la ruta antes de salir. Tienes 8 horas (07:00 → 15:00).</div>
+    <div class="txt-secondary" style="margin-bottom:12px;font-size:13px">Revisa los datos de la ruta antes de salir. Tienes 8 horas (07:00 → 15:00).</div>
     <div class="infoRuta" id="infoRuta"></div>
-    <div class="card" id="listaParadas" style="margin:0 0 14px;padding:12px"></div>
-    <div class="card" id="infoCamion" style="margin:0 0 14px;padding:12px"></div>
-    <button class="primary interactivo" id="btnIniciarRuta" style="align-self:center;min-width:200px">🚚 Iniciar ruta</button>
+    <div class="card" id="listaParadas" style="margin:0 0 14px;padding:14px"></div>
+    <div class="card" id="infoCamion" style="margin:0 0 14px;padding:14px"></div>
+    <button class="primary interactivo" id="btnIniciarRuta" style="align-self:center;min-width:220px">🚚 Iniciar ruta</button>
   </div>
 
   <!-- ============ HUD DURANTE EL JUEGO ============ -->
   <div class="screen" id="hud">
     <div id="barraTop">
-      <div class="relojFila">
-        <div id="horaDia">07:00</div>
-        <div id="estadoReloj">preparando ruta…</div>
+      <div class="relojFila" style="justify-content:space-between;align-items:center">
+        <div style="display:flex;align-items:baseline;gap:12px">
+          <div id="horaDia">07:00</div>
+          <div id="estadoReloj">preparando ruta…</div>
+        </div>
+        <div id="hudScoreBadge" style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:700">
+          <span style="color:#f59e0b">🏆 <span id="scoreVal">0</span> pts</span>
+          <span id="comboBadge" style="display:none;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:.03em">🔥 x1.5</span>
+        </div>
       </div>
       <div id="jornadaBar">
         <div id="linea15"><span class="lbl">15:00</span></div>
@@ -237,7 +471,7 @@
       <div class="kv"><span class="muted">Llegada planeada</span><b id="ppPlanLleg">—</b></div>
       <div class="kv"><span class="muted">Llegada real</span><b id="ppRealLleg">—</b></div>
       <div class="kv"><span class="muted">Atraso acumulado</span><b id="ppAtraso">—</b></div>
-      <hr style="border-color:var(--line)">
+      <hr style="border-color:var(--line);margin:8px 0">
       <div class="kv"><span class="muted">Stay Time planeado</span><b id="ppStayPlan">—</b></div>
       <div class="kv"><span class="muted">Stay Time real (vivo)</span><b id="ppStayReal">—</b></div>
       <div id="npsVivo"></div>
@@ -247,7 +481,7 @@
     <div id="avisos"></div>
 
     <div id="resumenDesv">
-      <div class="muted">Saliendo de la parada</div>
+      <div class="muted" style="font-size:12px;margin-bottom:4px">Saliendo de la parada</div>
       <div class="nps-emoji" id="rdEmoji"></div>
       <div class="nps-label" id="rdNpsLabel"></div>
       <div class="big" id="rdTitulo">—</div>
@@ -276,6 +510,7 @@
 
 <script type="module">
 import * as THREE from 'three';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 
 /* =====================================================================
    CONFIG — TODAS las constantes tuneables. Ningún número mágico fuera.
@@ -375,27 +610,40 @@ const CONFIG = {
     costoCajaNoEntregada: 12
   },
 
+  // Estrellas basadas DIRECTAMENTE en el NPS (Satisfacción del Cliente)
   estrellas: [
-    { maxCosto: 50,   estrellas: 5 },
-    { maxCosto: 250,  estrellas: 4 },
-    { maxCosto: 600,  estrellas: 3 },
-    { maxCosto: 1200, estrellas: 2 },
-    { maxCosto: Infinity, estrellas: 1 }
+    { minNps: 90, estrellas: 5, label: 'Servicio de Excelencia (90-100%)' },
+    { minNps: 75, estrellas: 4, label: 'Alto Desempeño (75-89%)' },
+    { minNps: 60, estrellas: 3, label: 'Cumplimiento Estándar (60-74%)' },
+    { minNps: 40, estrellas: 2, label: 'Oportunidad de Mejora (40-59%)' },
+    { minNps: 0,  estrellas: 1, label: 'Servicio Crítico (<40%)' }
   ],
 
-  // NPS del cliente: calificación por parada según desviación vs plan (en porcentaje 0%–100%).
-  // desviación = stay time real − stay time planeado.
+  // NPS del cliente: calificación por parada según desviación vs plan esperado.
+  // Hacerlo bien (verdes) genera 90% - 100% de NPS y premia la destreza.
   nps: {
     umbrales: [
       { maxDesvMin: 0,          emoji:'😍', nps:100, label:'Encantado' },
-      { maxDesvMin: 3,          emoji:'😊', nps:90,  label:'Muy satisfecho' },
-      { maxDesvMin: 8,          emoji:'🙂', nps:70,  label:'Satisfecho' },
-      { maxDesvMin: 15,         emoji:'😐', nps:50,  label:'Neutral' },
-      { maxDesvMin: 25,         emoji:'😠', nps:30,  label:'Insatisfecho' },
-      { maxDesvMin: Infinity,   emoji:'🤬', nps:10,  label:'Furioso' }
+      { maxDesvMin: 2,          emoji:'😊', nps:92,  label:'Muy satisfecho' },
+      { maxDesvMin: 5,          emoji:'😊', nps:82,  label:'Satisfecho' },
+      { maxDesvMin: 9,          emoji:'🙂', nps:65,  label:'Aceptable' },
+      { maxDesvMin: 15,         emoji:'😐', nps:45,  label:'Inconforme' },
+      { maxDesvMin: 22,         emoji:'😠', nps:25,  label:'Insatisfecho' },
+      { maxDesvMin: Infinity,   emoji:'🤬', nps:10,  label:'Pésimo' }
     ],
     rechazoNps: 0,       // NPS de paradas rechazadas por ventana (0%)
     noEntregadaNps: 0     // NPS de paradas no entregadas por corte de jornada (0%)
+  },
+
+  // Sistema de puntuación granular (para discriminar desempeños con alta precisión)
+  puntos: {
+    diana: 1000,            // Centro exacto de zona verde (bullseye)
+    verde: 750,             // Zona verde estándar
+    amarillo: 350,          // Zona amarilla
+    rojo: 100,              // Zona roja
+    bonusNpsFactor: 500,    // NPS% * 500 -> hasta 50,000 pts de satisfacción
+    bonusMinutoAhorro: 100, // Pts por cada minuto ahorrado antes de las 15:00
+    bonusParadaOk: 2000     // Pts por parada entregada a tiempo
   },
 
   leaderboard: {
@@ -446,7 +694,7 @@ function canalDe(i){ return (RUTA.canal && RUTA.canal[i]) || 'tradicional'; }
 function canalLabel(i){ return canalDe(i) === 'moderno' ? 'Canal Moderno' : 'Canal Tradicional'; }
 function canalBadge(i){
   const moderno = canalDe(i) === 'moderno';
-  const bg = moderno ? 'var(--accent)' : '#8a6a6a';
+  const bg = moderno ? 'var(--accent)' : 'var(--muted)';
   return `<span style="display:inline-block;font-size:10px;font-weight:700;color:#fff;`+
     `background:${bg};border-radius:999px;padding:2px 8px;vertical-align:middle">${canalLabel(i)}</span>`;
 }
@@ -507,11 +755,13 @@ function renderLeaderboard(containerId, highlightNombre){
     const medallas = ['🥇','🥈','🥉'];
     const filas = lb.map((e,i) => {
       const hl = highlightNombre && e.nombre === highlightNombre && e._fresh ? ' class="lb-highlight"' : '';
-      return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left">${e.nombre}</td>` +
+      const pts = (e.puntos ? e.puntos : Math.round((e.npsPromedio || 70) * 500 + 20000)).toLocaleString();
+      return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left"><b>${e.nombre}</b></td>` +
+        `<td style="color:#f59e0b;font-weight:700">${pts}</td>` +
         `<td>${Math.round(e.npsPromedio)}%</td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
-        `<td>$${e.costoTotal}</td><td>${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
+        `<td>$${e.costoTotal}</td><td style="color:#eab308">${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
     }).join('');
-    el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>NPS (%)</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
+    el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>Puntos</th><th>NPS</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
   };
 
   // Render instantáneo local
@@ -529,7 +779,8 @@ function renderLeaderboard(containerId, highlightNombre){
 async function agregarPuntaje(entry){
   const lb = getLocalLeaderboard();
   lb.push(entry);
-  lb.sort((a,b) => b.npsPromedio - a.npsPromedio || a.costoTotal - b.costoTotal);
+  // Ordenar principalmente por PUNTOS (granular), luego NPS, luego menor costo
+  lb.sort((a,b) => (b.puntos || 0) - (a.puntos || 0) || b.npsPromedio - a.npsPromedio || a.costoTotal - b.costoTotal);
   const top = lb.slice(0, CONFIG.leaderboard.maxEntries);
   guardarLeaderboard(top);
 
@@ -586,7 +837,9 @@ function calcularPlan(){
   for (let i=0;i<num.length;i++){
     reloj += tramo;
     llegada.push(reloj);
-    const st = B.atencionCliente + P.estacionamientoEstandar + num[i]*P.minPorManiobra;
+    // El plan estándar esperado contempla el tipo de acceso de la parada para calibrar el NPS de forma justa
+    let st = B.atencionCliente + P.estacionamientoEstandar + num[i]*P.minPorManiobra;
+    if (RUTA.zonaEstrecha[i]) st += CONFIG.camion.penalizacionEstrecha;
     stay.push(st);
     reloj += st;
   }
@@ -649,8 +902,12 @@ function calcularCostos(camion, sim){
   return { extra, cRechazo, cCajas, total, rechazos, cajasPerdidas };
 }
 
-function estrellasPara(costoTotal){
-  for (const u of CONFIG.estrellas) if (costoTotal <= u.maxCosto) return u.estrellas;
+// Las estrellas corresponden directamente al NPS promedio
+function estrellasPara(npsPromedio, truncado, rechazos){
+  if (truncado || (rechazos && rechazos >= 2)) return 1;
+  for (const u of CONFIG.estrellas) {
+    if (npsPromedio >= u.minNps) return u.estrellas;
+  }
   return 1;
 }
 
@@ -667,6 +924,10 @@ const G = {
   eventos:[],
   geocercas:[],
   maniobras:[],
+  puntosManiobras:0,
+  comboVerde:0,
+  maxCombo:0,
+  puntosTotal:0,
   paradaIdx:0,
   reloj: CONFIG.jornada.inicioMin,
   elapsed:0,
@@ -679,17 +940,19 @@ const G = {
 };
 
 /* =====================================================================
-   THREE.JS — escena procedural, cámara isométrica fija
+   THREE.JS — escena, cámara isométrica fija, carga de modelo OBJ
    ===================================================================== */
 const canvas = document.getElementById('canvas3d');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 const RED = { 50:0xffe5e5,100:0xffcccc,200:0xff9999,300:0xff6666,400:0xff3333,
-  500:0xff0000,600:0xcc0000,700:0x990000,800:0x660000,900:0x330000,950:0x240000 };
+  500:0xff0000,600:0xcc0000,700:0x990000,800:0x660000,900:0x330000,950:0x1a0000 };
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xefe7e7);
-scene.fog = new THREE.Fog(0xefe7e7, 24, 52);
+scene.background = new THREE.Color(0x1a1215);
+scene.fog = new THREE.Fog(0x1a1215, 38, 85);
 
 let camera;
 function setupCamera(){
@@ -701,54 +964,138 @@ function setupCamera(){
 }
 setupCamera();
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0xd6c6c6, 1.05));
-scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-const sun = new THREE.DirectionalLight(0xffffff, 1.15);
+// Lighting — bright, warm and crisp so all details pop
+scene.add(new THREE.HemisphereLight(0xffffff, 0x443333, 0.95));
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xffffff, 1.35);
 sun.position.set(10, 16, 6);
 scene.add(sun);
+const rimLight = new THREE.DirectionalLight(0xff5555, 0.4);
+rimLight.position.set(-8, 4, -6);
+scene.add(rimLight);
 
+// Ground
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(80, 80),
-  new THREE.MeshStandardMaterial({ color:0xe0d6d6, roughness:1 }));
+  new THREE.MeshStandardMaterial({ color:0x22181b, roughness:0.9 }));
 ground.rotation.x = -Math.PI/2;
 scene.add(ground);
+
+// Road
 const road = new THREE.Mesh(
-  new THREE.BoxGeometry(80, 0.05, 3),
-  new THREE.MeshStandardMaterial({ color:0xbfa9a9 }));
+  new THREE.BoxGeometry(80, 0.05, 3.4),
+  new THREE.MeshStandardMaterial({ color:0x33282b, roughness:0.85 }));
 road.position.set(0, 0.03, 3.2);
 scene.add(road);
 
+// Road lines (dashed center)
+const roadLine = new THREE.Mesh(
+  new THREE.BoxGeometry(80, 0.06, 0.08),
+  new THREE.MeshStandardMaterial({ color:0x554448, roughness:0.7 }));
+roadLine.position.set(0, 0.06, 3.2);
+scene.add(roadLine);
+
+// Buildings
 function edificio(x,z,w,h,d,color){
   const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshStandardMaterial({ color, roughness:.9 }));
+    new THREE.MeshStandardMaterial({ color, roughness:.85 }));
   m.position.set(x, h/2, z);
   scene.add(m); return m;
 }
-for (let i=0;i<11;i++) edificio(-14 + i*3, -4.2, 2.2, 1.6+((i*7)%3)*0.8, 2.2, 0xcdbcbc);
-
-const truck = new THREE.Group();
-const cabina = new THREE.Mesh(new THREE.BoxGeometry(1.4,1.3,1.8),
-  new THREE.MeshStandardMaterial({ color:RED[700] }));
-cabina.position.set(1.5, 0.85, 0);
-const caja = new THREE.Mesh(new THREE.BoxGeometry(3.2,1.8,2),
-  new THREE.MeshStandardMaterial({ color:RED[500] }));
-caja.position.set(-0.7, 1.1, 0);
-truck.add(cabina, caja);
-for (const [x,z] of [[1.4,1],[1.4,-1],[-1.4,1],[-1.4,-1]]){
-  const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.35,10),
-    new THREE.MeshStandardMaterial({ color:0x2a2020 }));
-  w.rotation.x = Math.PI/2; w.position.set(x, 0.4, z);
-  truck.add(w);
+for (let i=0;i<11;i++){
+  const h = 1.6+((i*7)%3)*0.8;
+  const c = 0x2e1f23 + ((i*23) % 8) * 0x020202;
+  edificio(-14 + i*3, -4.2, 2.2, h, 2.2, c);
+  // Window glow
+  if (i%2===0) {
+    const win = new THREE.Mesh(
+      new THREE.BoxGeometry(0.35, 0.35, 0.01),
+      new THREE.MeshBasicMaterial({ color:0xffaa55, transparent:true, opacity:0.4 }));
+    win.position.set(-14 + i*3, h*0.6, -3.1);
+    scene.add(win);
+  }
 }
+
+/* ---- Truck: OBJ model with procedural fallback ---- */
+const truck = new THREE.Group();
 const STOP_X = 0, OFF_DER = 22, OFF_IZQ = -22;
-truck.position.set(STOP_X, 0, 2);
+truck.position.set(STOP_X, 0, 2.4);
 scene.add(truck);
 
+// Material mapping for the OBJ (matches material names from the .obj file)
+const objMaterials = {
+  'body_red':    new THREE.MeshStandardMaterial({ color:0xd00000, roughness:0.35, metalness:0.15 }),
+  'body_white':  new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.3, metalness:0.05 }),
+  'chrome':      new THREE.MeshStandardMaterial({ color:0xe0e0e0, roughness:0.1, metalness:0.9 }),
+  'dark_trim':   new THREE.MeshStandardMaterial({ color:0x222222, roughness:0.6, metalness:0.2 }),
+  'glass':       new THREE.MeshStandardMaterial({ color:0x66aacc, roughness:0.1, metalness:0.3, transparent:true, opacity:0.65 }),
+  'lamp_amber':  new THREE.MeshStandardMaterial({ color:0xffaa00, roughness:0.2, metalness:0.1, emissive:0xff8800, emissiveIntensity:0.6 }),
+  'rubber':      new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.95, metalness:0.0 }),
+};
+
+// Try loading OBJ, fall back to procedural
+let truckLoaded = false;
+const loader = new OBJLoader();
+loader.load(
+  'beverage-delivery-truck.obj',
+  (obj) => {
+    // Apply materials based on object/material names
+    obj.traverse((child) => {
+      if (child.isMesh) {
+        const matName = child.material?.name || '';
+        if (objMaterials[matName]) {
+          child.material = objMaterials[matName];
+        } else {
+          // Default to body red
+          child.material = objMaterials['body_red'];
+        }
+      }
+    });
+
+    // Scale and position: the OBJ spans along X from -4.71 to +4.65 (cab at +X, rear at -X)
+    // Scale 0.45 fits the scene road and buildings.
+    // rotation.y = 0 ensures the truck is aligned with the road (X-axis) and drives cab-forward towards +X.
+    obj.scale.setScalar(0.45);
+    obj.position.set(0, 0.03, 0);
+    obj.rotation.y = 0;
+
+    // Remove procedural fallback children
+    while (truck.children.length) truck.remove(truck.children[0]);
+    truck.add(obj);
+    truckLoaded = true;
+  },
+  undefined,
+  (err) => {
+    console.warn('OBJ load failed, using procedural truck:', err.message || err);
+    buildProceduralTruck();
+  }
+);
+
+// Procedural fallback (same as before but with improved materials)
+function buildProceduralTruck(){
+  const cabina = new THREE.Mesh(new THREE.BoxGeometry(1.4,1.3,1.8),
+    new THREE.MeshStandardMaterial({ color:RED[700], roughness:0.5, metalness:0.1 }));
+  cabina.position.set(1.5, 0.85, 0);
+  const caja = new THREE.Mesh(new THREE.BoxGeometry(3.2,1.8,2),
+    new THREE.MeshStandardMaterial({ color:RED[500], roughness:0.45, metalness:0.05 }));
+  caja.position.set(-0.7, 1.1, 0);
+  truck.add(cabina, caja);
+  for (const [x,z] of [[1.4,1],[1.4,-1],[-1.4,1],[-1.4,-1]]){
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4,0.4,0.35,10),
+      new THREE.MeshStandardMaterial({ color:0x1a1414, roughness:0.95 }));
+    w.rotation.x = Math.PI/2; w.position.set(x, 0.4, z);
+    truck.add(w);
+  }
+}
+// Build procedural immediately as fallback while OBJ loads
+buildProceduralTruck();
+
+/* ---- Destination building ---- */
 const destino = new THREE.Mesh(new THREE.BoxGeometry(2.4,3,2.4),
   new THREE.MeshStandardMaterial({ color:RED[600], roughness:.9 }));
 scene.add(destino);
 const marquesina = new THREE.Mesh(new THREE.BoxGeometry(2.8,0.15,1.2),
-  new THREE.MeshStandardMaterial({ color:RED[300] }));
+  new THREE.MeshStandardMaterial({ color:RED[300], roughness:.7 }));
 scene.add(marquesina);
 const paletaDestino = [RED[300], RED[400], RED[500], RED[600], RED[700], RED[200], RED[400]];
 function configurarDestino(spec){
@@ -846,7 +1193,7 @@ function loop(now){
       truck.position.x = OFF_IZQ + (trasladoAnim.hasta - OFF_IZQ) * ((k-0.5)*2);
     }
     truck.position.y = Math.abs(Math.sin(animClock*14)) * 0.05;
-    if (k >= 1){ const h = trasladoAnim.hasta; trasladoAnim = null; truck.position.set(h, 0, 2); }
+    if (k >= 1){ const h = trasladoAnim.hasta; trasladoAnim = null; truck.position.set(h, 0, 2.4); }
   }
 
   if (geofence.visible){
@@ -908,7 +1255,7 @@ function estadoBriefing(){
   $('minijuego').classList.remove('on');
 
   const totalCajas = RUTA.cajas.reduce((a,b)=>a+b,0);
-  const estrechas = RUTA.zonaEstrecha.map((e,i)=> e?`P${i+1}`:null).filter(Boolean);
+  const estrechas = RUTA.zonaEstrecha.map((e,i)=>e?`P${i+1}`:null).filter(Boolean);
   const ventanas = RUTA.ventanaCierre
     .map((v,i)=> v ? `P${i+1} ${v}` : null).filter(Boolean).join(' · ') || 'ninguna';
   const nModerno = RUTA.cajas.map((_,i)=>canalDe(i)).filter(c=>c==='moderno').length;
@@ -921,13 +1268,13 @@ function estadoBriefing(){
     `<span class="chip">↔️ ${estrechas.length} acceso estrecho${estrechas.length?` (${estrechas.join(', ')})`:''}</span>`+
     `<span class="chip">⏰ Ventanas: ${ventanas}</span>`;
 
-  $('listaParadas').innerHTML = '<h3 style="font-size:14px;margin-bottom:8px">Paradas</h3>' +
+  $('listaParadas').innerHTML = '<h3 style="font-size:14px;margin-bottom:10px">Paradas</h3>' +
     RUTA.cajas.map((c,i)=>
     `<div class="kv"><span>P${i+1} · ${nombreParada(i)} ${canalBadge(i)}</span><b>${c} cajas</b></div>`).join('');
 
   const cam = CONFIG.camion;
   $('infoCamion').innerHTML =
-    `<h3 style="font-size:14px;margin-bottom:8px">🚚 ${cam.nombre}</h3>`+
+    `<h3 style="font-size:14px;margin-bottom:10px">🚚 ${cam.nombre}</h3>`+
     `<div class="kv"><span class="muted">Capacidad</span><b>${cam.capacidad} cajas</b></div>`+
     `<div class="kv"><span class="muted">Estacionamiento</span><b>${cam.estacionamiento} min/parada</b></div>`+
     `<div class="kv"><span class="muted">Penalización acceso estrecho</span><b>+${cam.penalizacionEstrecha} min</b></div>`;
@@ -966,6 +1313,10 @@ function iniciarRuta(){
 
   G.estado='JUEGO';
   G.maniobras = num.map(()=>[]);
+  G.puntosManiobras = 0;
+  G.comboVerde = 0;
+  G.maxCombo = 0;
+  G.puntosTotal = 0;
   G.paradaIdx = 0;
   G.reloj = CONFIG.jornada.inicioMin;
   G.elapsed = 0;
@@ -975,6 +1326,8 @@ function iniciarRuta(){
   G.npsReal = [];
   mostrar('hud');
   $('avisos').innerHTML = '';
+  $('scoreVal').textContent = '0';
+  $('comboBadge').style.display = 'none';
   pushSeg('cedis', CONFIG.bloques.cargaCEDIS);
   actualizarReloj();
   entrarTraslado(0);
@@ -1023,7 +1376,7 @@ function actualizarReloj(){
   const enRojo = G.reloj >= CONFIG.jornada.corteDuroMin;
   $('horaDia').style.color = enRojo ? 'var(--bad)' : (extra > 0 ? 'var(--warn)' : 'var(--txt)');
   if (enRojo) $('estadoReloj').innerHTML = `<span style="color:var(--bad)">⏰ ¡Jornada agotada!</span>`;
-  else if (extra>0) $('estadoReloj').innerHTML = `<span style="color:var(--warn)">zona amarilla · +${Math.round(extra)} min</span>`;
+  else if (extra>0) $('estadoReloj').innerHTML = `<span style="color:var(--warn)">zona roja · +${Math.round(extra)} min</span>`;
 }
 
 // ---------- TRASLADO ----------
@@ -1074,7 +1427,7 @@ function entrarParada(i){
     $('ppStayReal').textContent = Math.round(stayRechazo)+' min';
     // NPS del rechazo
     G.npsReal[i] = { emoji:'🤬', nps:0, label:'Rechazado' };
-    $('npsVivo').innerHTML = `🤬 NPS 0%`;
+    $('npsVivo').innerHTML = `🤬 NPS 0% · Rechazado`;
     setTimeout(()=> salirParada(i), 1400);
     return;
   }
@@ -1107,10 +1460,11 @@ function actualizarNpsVivo(i){
   const mCompletadas = (G.maniobras[i] || []).length;
   const nTotal = num[i];
   const restMani = Math.max(0, nTotal - mCompletadas);
-  const tiempoProyectado = G._stayReal + restMani * CONFIG.plan.minPorManiobra;
+  // Proyección optimista si el jugador sigue descargando bien
+  const tiempoProyectado = G._stayReal + restMani * CONFIG.mj.tVerde;
   const desvProyectada = tiempoProyectado - G.plan.stay[i];
   const n = calcNps(desvProyectada);
-  $('npsVivo').innerHTML = `${n.emoji} NPS ${n.nps}% · ${n.label}`;
+  $('npsVivo').innerHTML = `${n.emoji} <b>NPS ${n.nps}%</b> · ${n.label}`;
 }
 
 function salirParada(i){
@@ -1131,6 +1485,7 @@ function salirParada(i){
   // Resumen con emoji NPS
   $('rdEmoji').textContent = nps.emoji;
   $('rdNpsLabel').textContent = `NPS ${nps.nps}% · ${nps.label}`;
+  $('rdNpsLabel').style.color = nps.nps >= 75 ? 'var(--ok)' : nps.nps >= 45 ? 'var(--warn)' : 'var(--bad)';
   $('rdTitulo').innerHTML = `Atraso de llegada: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
   $('rdDetalle').innerHTML =
     `<b>${nombreParada(i)}</b> · ${canalLabel(i)}<br>`+
@@ -1207,13 +1562,15 @@ function pintarZonas(green){
   const y = CONFIG.mj.zonaAmarilla;
   const gL = 0.5 - green/2, gR = 0.5 + green/2;
   const yL = gL - y, yR = gR + y;
-  const V='var(--verde)', A='var(--amarillo)', R='var(--rojo)';
   const p = x => (x*100).toFixed(1)+'%';
+  // Gradient with glow effect
   barraMJ.style.background =
     `linear-gradient(90deg,`+
-    `${R} 0 ${p(Math.max(0,yL))}, ${A} ${p(Math.max(0,yL))} ${p(gL)},`+
-    `${V} ${p(gL)} ${p(gR)}, ${A} ${p(gR)} ${p(Math.min(1,yR))},`+
-    `${R} ${p(Math.min(1,yR))} 100%)`;
+    `${getComputedStyle(document.documentElement).getPropertyValue('--rojo').trim()} 0 ${p(Math.max(0,yL))},`+
+    `${getComputedStyle(document.documentElement).getPropertyValue('--amarillo').trim()} ${p(Math.max(0,yL))} ${p(gL)},`+
+    `${getComputedStyle(document.documentElement).getPropertyValue('--verde').trim()} ${p(gL)} ${p(gR)},`+
+    `${getComputedStyle(document.documentElement).getPropertyValue('--amarillo').trim()} ${p(gR)} ${p(Math.min(1,yR))},`+
+    `${getComputedStyle(document.documentElement).getPropertyValue('--rojo').trim()} ${p(Math.min(1,yR))} 100%)`;
 }
 
 function arrancarManiobra(){
@@ -1236,10 +1593,49 @@ function resolverManiobra(){
   const pos = G.mj.pos;
   const half = G.mj.green/2;
   const dist = Math.abs(pos - 0.5);
-  let tiempo, zona, color;
-  if (dist <= half){ tiempo=CONFIG.mj.tVerde; zona='¡VERDE!'; color='var(--verde)'; }
-  else if (dist <= half + CONFIG.mj.zonaAmarilla){ tiempo=CONFIG.mj.tAmarillo; zona='amarillo'; color='var(--amarillo)'; }
-  else { tiempo=CONFIG.mj.tRojo; zona='rojo'; color='var(--rojo)'; }
+  let tiempo, zona, color, ptsBase, esDiana = false;
+
+  if (dist <= half * 0.35){
+    tiempo = CONFIG.mj.tVerde;
+    zona = '🎯 ¡DIANA PERFECTA!';
+    color = '#4ade80';
+    ptsBase = CONFIG.puntos.diana;
+    esDiana = true;
+    G.comboVerde = (G.comboVerde || 0) + 1;
+  } else if (dist <= half){
+    tiempo = CONFIG.mj.tVerde;
+    zona = '✅ ¡VERDE ÓPTIMO!';
+    color = 'var(--verde)';
+    ptsBase = CONFIG.puntos.verde;
+    G.comboVerde = (G.comboVerde || 0) + 1;
+  } else if (dist <= half + CONFIG.mj.zonaAmarilla){
+    tiempo = CONFIG.mj.tAmarillo;
+    zona = '⚠️ Amarillo (+1.2 min)';
+    color = 'var(--amarillo)';
+    ptsBase = CONFIG.puntos.amarillo;
+    G.comboVerde = 0;
+  } else {
+    tiempo = CONFIG.mj.tRojo;
+    zona = '❌ Rojo (+3.0 min)';
+    color = 'var(--rojo)';
+    ptsBase = CONFIG.puntos.rojo;
+    G.comboVerde = 0;
+  }
+
+  G.maxCombo = Math.max(G.maxCombo || 0, G.comboVerde);
+  const mult = G.comboVerde >= 4 ? 2.0 : G.comboVerde >= 3 ? 1.5 : G.comboVerde >= 2 ? 1.25 : 1.0;
+  const ptsGanados = Math.round(ptsBase * mult);
+  G.puntosManiobras = (G.puntosManiobras || 0) + ptsGanados;
+  G.puntosTotal = G.puntosManiobras;
+
+  // Actualizar HUD Score y Combo
+  $('scoreVal').textContent = G.puntosTotal.toLocaleString();
+  if (G.comboVerde >= 2){
+    $('comboBadge').style.display = 'inline-block';
+    $('comboBadge').textContent = `🔥 x${mult} COMBO (${G.comboVerde})`;
+  } else {
+    $('comboBadge').style.display = 'none';
+  }
 
   const {i, m, n} = G.mj;
   G.maniobras[i].push(tiempo);
@@ -1249,7 +1645,8 @@ function resolverManiobra(){
   pintarPila(1 - (m+1)/n);
   actualizarNpsVivo(i);
 
-  $('mjFeedback').innerHTML = `<span style="color:${color}">${zona} · ${tiempo.toFixed(1)} min</span>`;
+  const comboTxt = mult > 1 ? ` <span style="font-size:14px;color:#f59e0b">(+${ptsGanados} pts · x${mult})</span>` : ` <span style="font-size:14px;color:#f59e0b">(+${ptsGanados} pts)</span>`;
+  $('mjFeedback').innerHTML = `<span style="color:${color}">${zona} · ${tiempo.toFixed(1)} min</span>${comboTxt}`;
 
   setTimeout(()=>{
     if (m+1 < n){ G.mj.m++; arrancarManiobra(); }
@@ -1279,7 +1676,6 @@ function estadoResultados(){
 
   const sim = simularJornada(G.camion, G.maniobras, G.eventos);
   const costos = calcularCostos(G.camion, sim);
-  const estrellas = estrellasPara(costos.total);
 
   // NPS por parada (100% consistente con desv = stay real - stay plan)
   const npsArr = sim.paradas.map(p => {
@@ -1290,6 +1686,17 @@ function estadoResultados(){
   const npsValues = npsArr.map(n=>n.nps);
   const npsPromedio = npsValues.length ? (npsValues.reduce((a,b)=>a+b,0) / npsValues.length) : 0;
   const entregadas = sim.paradas.filter(p => !p.noEntregada && !p.rechazo).length;
+
+  // Estrellas calculadas DIRECTAMENTE a partir del NPS
+  const estrellas = estrellasPara(npsPromedio, sim.truncado, costos.rechazos);
+
+  // Puntuación Global Granular
+  const bonusNps = Math.round(npsPromedio * CONFIG.puntos.bonusNpsFactor);
+  const minutosAhorro = Math.max(0, CONFIG.jornada.corteDuroMin - sim.cierre);
+  const bonusTiempo = minutosAhorro * CONFIG.puntos.bonusMinutoAhorro;
+  const bonusEntregas = entregadas * CONFIG.puntos.bonusParadaOk;
+  const penalizacionCostos = Math.round(costos.total * 5);
+  const puntosTotal = Math.max(0, (G.puntosManiobras || 0) + bonusNps + bonusTiempo + bonusEntregas - penalizacionCostos);
 
   // Desglose Stay Time
   const agg = { estac:0, penal:0, atencion:0, descarga:0, evento:0, gestion:0 };
@@ -1318,7 +1725,7 @@ function estadoResultados(){
       <td>${hhmm(planLleg)}</td>
       <td>${hhmm(p.llegada)}</td>
       <td class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)}</td>
-      <td style="font-size:18px;text-align:center" title="NPS ${npsInfo.nps}%">${npsInfo.emoji}</td>
+      <td style="font-size:16px;text-align:center" title="NPS ${npsInfo.nps}%">${npsInfo.emoji} ${npsInfo.nps}%</td>
       <td class="sub">${est}</td>
     </tr>`;
   }).join('');
@@ -1337,34 +1744,57 @@ function estadoResultados(){
   ]);
 
   // NPS promedio badge (escala porcentual 0-100%)
-  const npsColor = npsPromedio >= 80 ? 'var(--ok)' : npsPromedio >= 50 ? 'var(--warn)' : 'var(--bad)';
+  const npsColor = npsPromedio >= 75 ? 'var(--ok)' : npsPromedio >= 50 ? 'var(--warn)' : 'var(--bad)';
 
   $('resultados').innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;animation:fadeIn .5s ease-out">
       <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
            alt="Coca‑Cola" class="coca-logo-sm" onerror="this.style.display='none'">
       <h2 style="margin:0">Cierre de jornada</h2>
     </div>
     ${sim.truncado ? '<div class="toast bad" style="margin-bottom:12px;pointer-events:auto">⏰ <b>No te dio tiempo.</b> ' + sim.paradas.filter(p=>p.noEntregada).length + ' parada(s) quedaron sin entrega.</div>' : ''}
+    
     <div class="grid2">
-      <div class="card">
-        <div class="sub">${G.nombreJugador || 'Jugador'} · ${CONFIG.camion.nombre.toLowerCase()}</div>
-        <div class="cierreBig" style="color:${sim.tiempoExtra>0?'var(--bad)':'var(--ok)'}">${hhmm(sim.cierre)}</div>
-        <div>Jornada total <b>${Math.round(sim.total)} min</b> ·
-          tiempo extra <b class="${sim.tiempoExtra>0?'neg':'zero'}">${Math.round(sim.tiempoExtra)} min</b></div>
-        <div class="estrellas" style="margin-top:8px;color:#e0a800">${estrellasStr}</div>
-        <div style="margin-top:8px;font-size:28px;text-align:center">
-          NPS promedio: <span style="color:${npsColor};font-weight:800">${Math.round(npsPromedio)}%</span>
+      <div class="card kpi-hero card-accent">
+        <div class="sub">${G.nombreJugador || 'Jugador'} · ${CONFIG.camion.nombre}</div>
+        
+        <!-- Puntuación Granular Destacada -->
+        <div style="font-size:13px;text-transform:uppercase;color:#f59e0b;font-weight:800;letter-spacing:.08em;margin-top:6px">Puntuación Total</div>
+        <div style="font-size:44px;font-weight:800;color:#f59e0b;font-family:var(--mono);text-shadow:0 0 20px rgba(245,158,11,.3)">
+          ${puntosTotal.toLocaleString()} <span style="font-size:20px">PTS</span>
         </div>
-        <div class="sub">Entregas: ${entregadas}/${num.length} paradas</div>
+
+        <div class="estrellas" style="color:#eab308;font-size:28px">${estrellasStr}</div>
+        
+        <div style="display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap">
+          <div class="nps-badge" style="color:${npsColor};font-size:20px;padding:4px 16px">
+            NPS Promedio: <b>${Math.round(npsPromedio)}%</b>
+          </div>
+          <div class="nps-badge" style="color:var(--txt);font-size:18px;padding:4px 16px">
+            Cierre: <b>${hhmm(sim.cierre)}</b>
+          </div>
+        </div>
+        <div class="sub" style="margin-top:8px">Entregas completadas: <b>${entregadas}/${num.length}</b> paradas · Tiempo extra: <b>${Math.round(sim.tiempoExtra)} min</b></div>
       </div>
-      <div class="card consejo">
-        <h3>Consejo operativo</h3>
-        <div>${consejo}</div>
+
+      <div class="card" style="animation:slideUp .5s ease-out .15s both">
+        <h3 style="font-size:15px;color:#f59e0b">🎯 Desglose de Puntos</h3>
+        <div class="kv"><span class="muted">Precisión en Maniobras</span><b>+${(G.puntosManiobras||0).toLocaleString()} pts</b></div>
+        <div class="kv"><span class="muted">Satisfacción Cliente (NPS ${Math.round(npsPromedio)}%)</span><b>+${bonusNps.toLocaleString()} pts</b></div>
+        <div class="kv"><span class="muted">Eficiencia Horaria (${minutosAhorro} min de holgura)</span><b>+${bonusTiempo.toLocaleString()} pts</b></div>
+        <div class="kv"><span class="muted">Paradas Entregadas (${entregadas})</span><b>+${bonusEntregas.toLocaleString()} pts</b></div>
+        ${penalizacionCostos > 0 ? `<div class="kv" style="color:var(--bad)"><span>Penalizaciones por costos</span><b>-${penalizacionCostos.toLocaleString()} pts</b></div>` : ''}
+        <hr style="border-color:var(--line);margin:8px 0">
+        <div class="kv"><span style="font-weight:700">PUNTAJE FINAL</span><b style="font-size:18px;color:#f59e0b">${puntosTotal.toLocaleString()} PTS</b></div>
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card consejo" style="margin-top:14px;animation:slideUp .5s ease-out .25s both">
+      <h3 style="font-size:15px">💡 Consejo operativo</h3>
+      <div style="line-height:1.6">${consejo}</div>
+    </div>
+
+    <div class="card" style="margin-top:14px;animation:slideUp .5s ease-out .3s both">
       <h3>Plan vs realidad — por parada</h3>
       <div class="scroll">
       <table>
@@ -1376,35 +1806,36 @@ function estadoResultados(){
     </div>
 
     <div class="grid2" style="margin-top:14px">
-      <div class="card">
+      <div class="card" style="animation:slideUp .5s ease-out .4s both">
         <h3>Desglose del Stay Time</h3>
         ${stackDesglose}
       </div>
-      <div class="card">
+      <div class="card" style="animation:slideUp .5s ease-out .45s both">
         <h3>NO Stay Time</h3>
         ${stackNoStay}
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card" style="margin-top:14px;animation:slideUp .5s ease-out .5s both">
       <h3>Costo total del turno</h3>
       ${renderCostos(costos)}
     </div>
 
-    <div class="card" style="margin-top:14px">
+    <div class="card" style="margin-top:14px;animation:slideUp .5s ease-out .55s both">
       <h3>🏆 Leaderboard</h3>
       <div id="lbResultados"></div>
     </div>
 
-    <div style="display:flex;gap:12px;margin:18px 0 40px">
+    <div style="display:flex;gap:12px;margin:20px 0 40px">
       <button class="primary interactivo" id="btnRepetir">Repetir ruta (misma semilla)</button>
       <button class="interactivo" id="btnMenu">Menú</button>
     </div>
   `;
 
-  // Guardar en leaderboard
+  // Guardar en leaderboard con PUNTOS granulares
   const entry = {
     nombre: G.nombreJugador || 'Anónimo',
+    puntos: puntosTotal,
     npsPromedio: Math.round(npsPromedio*10)/10,
     costoTotal: Math.round(costos.total),
     estrellas,
@@ -1419,8 +1850,6 @@ function estadoResultados(){
   // Quitar el flag _fresh para que solo el recién guardado se resalte
   const lb = getLocalLeaderboard();
   lb.forEach(e => delete e._fresh);
-  guardarLeaderboard(lb);
-
   $('btnRepetir').onclick = ()=> estadoBriefing();
   $('btnMenu').onclick = ()=> estadoMenu();
 }
@@ -1428,7 +1857,7 @@ function estadoResultados(){
 function renderStack(items){
   const total = items.reduce((a,[,v])=>a+v,0) || 1;
   const segs = items.map(([,v,c])=>`<div class="s" style="width:${v/total*100}%;background:${c}"></div>`).join('');
-  const leg = items.map(([n,v,c])=>`<div class="kv"><span><i style="display:inline-block;width:9px;height:9px;background:${c};border-radius:2px;margin-right:6px"></i>${n}</span><b>${Math.round(v)} min</b></div>`).join('');
+  const leg = items.map(([n,v,c])=>`<div class="kv"><span><i style="display:inline-block;width:10px;height:10px;background:${c};border-radius:3px;margin-right:6px"></i>${n}</span><b>${Math.round(v)} min</b></div>`).join('');
   return `<div class="stack">${segs}</div>${leg}`;
 }
 function renderCostos(c){
@@ -1437,7 +1866,7 @@ function renderCostos(c){
     ['Rechazos ('+c.rechazos+')', c.cRechazo],
     ['Cajas no entregadas ('+c.cajasPerdidas+')', c.cCajas]
   ].map(([n,v])=>`<div class="kv"><span class="muted">${n}</span><b>$${v.toFixed(0)}</b></div>`).join('');
-  return filas + `<hr style="border-color:var(--line)"><div class="kv"><span><b>TOTAL</b></span><b style="font-size:18px">$${c.total.toFixed(0)}</b></div>`;
+  return filas + `<hr style="border-color:var(--line);margin:8px 0"><div class="kv"><span><b>TOTAL</b></span><b style="font-size:20px;color:${c.total>0?'var(--bad)':'var(--ok)'}">$${c.total.toFixed(0)}</b></div>`;
 }
 
 function generarConsejo(sim, agg, costos){

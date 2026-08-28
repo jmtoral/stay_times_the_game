@@ -47,6 +47,7 @@ export default {
 
         const nuevaEntrada = {
           nombre: String(body.nombre).slice(0, 25).trim() || 'Anónimo',
+          puntos: Math.max(0, Math.round(Number(body.puntos) || 0)),
           npsPromedio: Math.min(100, Math.max(0, Number(body.npsPromedio))),
           costoTotal: Math.max(0, Math.round(Number(body.costoTotal) || 0)),
           estrellas: Math.min(5, Math.max(1, Math.round(Number(body.estrellas) || 1))),
@@ -59,8 +60,8 @@ export default {
         const rankingActual = await getLeaderboard(env, 50);
         rankingActual.push(nuevaEntrada);
 
-        // Ordenar por NPS descendente, luego menor costo
-        rankingActual.sort((a, b) => b.npsPromedio - a.npsPromedio || a.costoTotal - b.costoTotal);
+        // Ordenar por Puntos descendente, luego NPS descendente, luego menor costo
+        rankingActual.sort((a, b) => (b.puntos || 0) - (a.puntos || 0) || b.npsPromedio - a.npsPromedio || a.costoTotal - b.costoTotal);
 
         // Guardar Top 50 en KV
         const top50 = rankingActual.slice(0, 50);

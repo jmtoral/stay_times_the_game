@@ -172,31 +172,33 @@ Todas las tareas descritas a continuación ya fueron codificadas e integradas en
 - `spanBarraMin` se ajusta a ~540 para que la barra muestre hasta 16:00 (espacio visual para rebase).
 - En `salirParada()`, verificar `G.reloj >= corteDuroMin` antes de ir a la siguiente.
 
-### T4: Calificación del cliente (NPS + emoji)
-- **Nuevo en CONFIG**:
+### T4: Calificación del cliente (NPS + emoji en porcentaje)
+- **Escala porcentual en CONFIG**:
   ```js
   nps: {
     umbrales: [
-      { maxDesvMin: 0,   emoji: '😍', nps: 10, label: 'Encantado' },
-      { maxDesvMin: 3,   emoji: '😊', nps: 9,  label: 'Muy satisfecho' },
-      { maxDesvMin: 8,   emoji: '🙂', nps: 7,  label: 'Satisfecho' },
-      { maxDesvMin: 15,  emoji: '😐', nps: 5,  label: 'Neutral' },
-      { maxDesvMin: 25,  emoji: '😠', nps: 3,  label: 'Insatisfecho' },
-      { maxDesvMin: Infinity, emoji: '🤬', nps: 1, label: 'Furioso' }
-    ]
+      { maxDesvMin: 0,   emoji: '😍', nps: 100, label: 'Encantado' },
+      { maxDesvMin: 3,   emoji: '😊', nps: 90,  label: 'Muy satisfecho' },
+      { maxDesvMin: 8,   emoji: '🙂', nps: 70,  label: 'Satisfecho' },
+      { maxDesvMin: 15,  emoji: '😐', nps: 50,  label: 'Neutral' },
+      { maxDesvMin: 25,  emoji: '😠', nps: 30,  label: 'Insatisfecho' },
+      { maxDesvMin: Infinity, emoji: '🤬', nps: 10, label: 'Furioso' }
+    ],
+    rechazoNps: 0,
+    noEntregadaNps: 0
   }
   ```
-- **Cálculo**: desviación = stay time real − stay time planeado. Si ≤0 → 😍. Si 25+ → 🤬. Paradas rechazadas/no entregadas → 🤬 NPS 0.
+- **Cálculo**: desviación = stay time real − stay time planeado. Si ≤0 → 😍 (100%). Si 25+ → 🤬 (10%). Paradas rechazadas/no entregadas → 🤬 (0%).
 - **Dónde se muestra**:
-  - `salirParada()` → emoji grande + label en el resumen de desviación.
+  - `salirParada()` → emoji grande + label en el resumen de desviación (ej. `NPS 90% · Muy satisfecho`).
   - Panel de parada (HUD) → NPS en vivo conforme avanza el stay time.
-  - Resultados → columna de emoji+NPS en la tabla. NPS promedio como KPI.
-- **Nota pedagógica**: con juego perfecto, las paradas con `zonaEstrecha` sacan NPS 7 (no 10) porque la penalización estructural (+8 min) genera desviación vs el plan (que ignora estrechas). Esto enseña que la infraestructura impacta la satisfacción del cliente.
+  - Resultados → columna de emoji + NPS (%) en la tabla. NPS promedio (%) como KPI principal.
+- **Nota pedagógica**: con juego perfecto, las paradas con `zonaEstrecha` sacan NPS 70% (no 100%) porque la penalización estructural (+8 min) genera desviación vs el plan (que ignora estrechas). Esto enseña que la infraestructura impacta la satisfacción del cliente.
 
 ### T5: Leaderboard
 - **Input de nombre** en el menú (campo `<input id="nombreInput">`), requerido.
 - **Almacenamiento**: `localStorage.setItem('stLeaderboard', JSON.stringify(entries))`.
-- **Métrica principal**: NPS promedio (higher = better). Secundario: costo total.
+- **Métrica principal**: NPS promedio porcentual (higher = better). Secundario: costo total.
 - **Estructura por entrada**:
   ```js
   { nombre, npsPromedio, costoTotal, estrellas, paradasEntregadas, paradasTotal, ruta, fecha }
@@ -208,21 +210,24 @@ Todas las tareas descritas a continuación ya fueron codificadas e integradas en
 ### T6: Branding Coca-Cola
 - Usar el logo Coca-Cola (imagen por URL: `https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg` o similar CDN).
 - **Dónde**: menú (grande), resultados (mediano), briefing de ruta (pequeño).
-- La paleta roja del juego ya es Coca-Cola (#cc0000, #ff0000, etc.) — conservarla.
-- Agregar `| Coca‑Cola` al `<title>`.
+- La paleta roja del juego ya es Coca-Cola (#cc0000, #ff0000, etc.) — conservada.
+- Título actualizado: `Stay Time — Simulador de jornada de reparto | Coca‑Cola`.
 
 ---
 
 ## 10. Lo que funciona HOY (verificado)
 
 - [x] Abre sin errores en consola
-- [x] Números canónicos (468/496/465) ✓ (van a cambiar con el refactor)
-- [x] Chico perfecto → P5 a 12:15 ✓ (ya no aplica post-refactor)
+- [x] 1 solo camión automatizado (sin pantallas redundantes)
+- [x] 5 paradas con balanceo ajustado de 8 horas
+- [x] NPS calculado por parada en escala 0%–100% y promedio ponderado
+- [x] Corte de jornada a las 15:00 con penalización por no entrega (sin crash)
+- [x] Leaderboard local persistente en `localStorage` con Top 10
+- [x] Branding Coca-Cola integrado en menús y HUD
 - [x] < 5000 triángulos (~438)
 - [x] Maniobras por parada fijas (no dependen del desempeño)
 - [x] Todas las constantes en CONFIG
 - [x] RNG reproducible
-- [x] GitHub Pages funcionando
 
 ---
 
@@ -234,7 +239,6 @@ Todas las tareas descritas a continuación ya fueron codificadas e integradas en
 | `SPEC.md` | Especificación original (pre-refactor) |
 | `CLAUDE.md` | Contexto para asistentes de código |
 | `README.md` | Readme del repo |
-| `last.md` | Bitácora de sesiones anteriores |
 | `handoff.md` | **Este documento** |
 | `.gitignore` | Excluye `.claude/` |
 
@@ -262,3 +266,23 @@ git checkout pre-refactor-jefe
 # o para borrar todo lo nuevo:
 git reset --hard pre-refactor-jefe
 ```
+
+---
+
+## 14. Recomendaciones para Backend Compartido (Leaderboard Global)
+
+Si se desea que los puntajes se compartan entre distintos usuarios/dispositivos:
+
+1. **Opción Serverless / BaaS (Recomendada por costo cero y rapidez)**:
+   - **Supabase o Firebase Firestore**:
+     - Integración directa vía SDK en el cliente (`<script src="..."></script>`).
+     - Colección `leaderboard` con campos `{ nombre, npsPromedio, costoTotal, estrellas, paradasEntregadas, paradasTotal, ruta, fecha, timestamp }`.
+     - Consulta para Top 10: `db.collection('leaderboard').orderBy('npsPromedio', 'desc').orderBy('costoTotal', 'asc').limit(10)`.
+
+2. **Opción Edge / Worker (Ligera para GitHub Pages)**:
+   - **Cloudflare Workers + D1 o KV**:
+     - Dos endpoints REST: `GET /api/leaderboard` (devuelve top 10 en JSON) y `POST /api/score` (inserta puntaje).
+     - Completamente gratuito hasta 100k llamadas al día y latencia mínima global.
+
+3. **Seguridad / Anti-Trampas Básica**:
+   - Para evitar que un usuario manipule el payload en consola (`fetch('/api/score', { npsPromedio: 100, costoTotal: 0 })`), se puede enviar un array resumido de maniobras/tiempos y que el backend o Worker recalcule y valide la coherencia del NPS antes de guardar.

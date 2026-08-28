@@ -383,19 +383,19 @@ const CONFIG = {
     { maxCosto: Infinity, estrellas: 1 }
   ],
 
-  // NPS del cliente: calificación por parada según desviación vs plan.
+  // NPS del cliente: calificación por parada según desviación vs plan (en porcentaje 0%–100%).
   // desviación = stay time real − stay time planeado.
   nps: {
     umbrales: [
-      { maxDesvMin: 0,          emoji:'😍', nps:10, label:'Encantado' },
-      { maxDesvMin: 3,          emoji:'😊', nps:9,  label:'Muy satisfecho' },
-      { maxDesvMin: 8,          emoji:'🙂', nps:7,  label:'Satisfecho' },
-      { maxDesvMin: 15,         emoji:'😐', nps:5,  label:'Neutral' },
-      { maxDesvMin: 25,         emoji:'😠', nps:3,  label:'Insatisfecho' },
-      { maxDesvMin: Infinity,   emoji:'🤬', nps:1,  label:'Furioso' }
+      { maxDesvMin: 0,          emoji:'😍', nps:100, label:'Encantado' },
+      { maxDesvMin: 3,          emoji:'😊', nps:90,  label:'Muy satisfecho' },
+      { maxDesvMin: 8,          emoji:'🙂', nps:70,  label:'Satisfecho' },
+      { maxDesvMin: 15,         emoji:'😐', nps:50,  label:'Neutral' },
+      { maxDesvMin: 25,         emoji:'😠', nps:30,  label:'Insatisfecho' },
+      { maxDesvMin: Infinity,   emoji:'🤬', nps:10,  label:'Furioso' }
     ],
-    rechazoNps: 0,       // NPS de paradas rechazadas por ventana
-    noEntregadaNps: 0     // NPS de paradas no entregadas (corte de jornada)
+    rechazoNps: 0,       // NPS de paradas rechazadas por ventana (0%)
+    noEntregadaNps: 0     // NPS de paradas no entregadas por corte de jornada (0%)
   },
 
   leaderboard: { maxEntries: 10 },
@@ -491,10 +491,10 @@ function renderLeaderboard(containerId, highlightNombre){
   const filas = lb.map((e,i) => {
     const hl = highlightNombre && e.nombre === highlightNombre && e._fresh ? ' class="lb-highlight"' : '';
     return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left">${e.nombre}</td>` +
-      `<td>${e.npsPromedio.toFixed(1)}</td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
+      `<td>${Math.round(e.npsPromedio)}%</td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
       `<td>$${e.costoTotal}</td><td>${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
   }).join('');
-  el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>NPS</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
+  el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>NPS (%)</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
 }
 
 /* =====================================================================
@@ -1021,7 +1021,7 @@ function entrarParada(i){
     $('ppStayReal').textContent = Math.round(stayRechazo)+' min';
     // NPS del rechazo
     G.npsReal[i] = { emoji:'🤬', nps:0, label:'Rechazado' };
-    $('npsVivo').innerHTML = `🤬 NPS 0`;
+    $('npsVivo').innerHTML = `🤬 NPS 0%`;
     setTimeout(()=> salirParada(i), 1400);
     return;
   }
@@ -1053,7 +1053,7 @@ function entrarParada(i){
 function actualizarNpsVivo(i){
   const desv = G._stayReal - G.plan.stay[i];
   const n = calcNps(desv);
-  $('npsVivo').innerHTML = `${n.emoji} NPS ${n.nps} · ${n.label}`;
+  $('npsVivo').innerHTML = `${n.emoji} NPS ${n.nps}% · ${n.label}`;
 }
 
 function salirParada(i){
@@ -1072,7 +1072,7 @@ function salirParada(i){
 
   // Resumen con emoji NPS
   $('rdEmoji').textContent = nps.emoji;
-  $('rdNpsLabel').textContent = `NPS ${nps.nps} · ${nps.label}`;
+  $('rdNpsLabel').textContent = `NPS ${nps.nps}% · ${nps.label}`;
   $('rdTitulo').innerHTML = `Atraso: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
   $('rdDetalle').innerHTML =
     `<b>${nombreParada(i)}</b> · ${canalLabel(i)}<br>`+
@@ -1261,7 +1261,7 @@ function estadoResultados(){
       <td>${hhmm(planLleg)}</td>
       <td>${hhmm(p.llegada)}</td>
       <td class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)}</td>
-      <td style="font-size:18px;text-align:center" title="NPS ${npsInfo.nps}">${npsInfo.emoji}</td>
+      <td style="font-size:18px;text-align:center" title="NPS ${npsInfo.nps}%">${npsInfo.emoji}</td>
       <td class="sub">${est}</td>
     </tr>`;
   }).join('');
@@ -1279,9 +1279,8 @@ function estadoResultados(){
     ['Tiempo extra', extra, 'var(--c-extra)']
   ]);
 
-  // NPS promedio badge
-  const npsColor = npsPromedio >= 8 ? 'var(--ok)' : npsPromedio >= 5 ? 'var(--warn)' : 'var(--bad)';
-  const npsEmoji = calcNps(npsPromedio <= 0 ? 0 : (10-npsPromedio)*2.5).emoji;
+  // NPS promedio badge (escala porcentual 0-100%)
+  const npsColor = npsPromedio >= 80 ? 'var(--ok)' : npsPromedio >= 50 ? 'var(--warn)' : 'var(--bad)';
 
   $('resultados').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
@@ -1298,7 +1297,7 @@ function estadoResultados(){
           tiempo extra <b class="${sim.tiempoExtra>0?'neg':'zero'}">${Math.round(sim.tiempoExtra)} min</b></div>
         <div class="estrellas" style="margin-top:8px;color:#e0a800">${estrellasStr}</div>
         <div style="margin-top:8px;font-size:28px;text-align:center">
-          NPS promedio: <span style="color:${npsColor};font-weight:800">${npsPromedio.toFixed(1)}</span>
+          NPS promedio: <span style="color:${npsColor};font-weight:800">${Math.round(npsPromedio)}%</span>
         </div>
         <div class="sub">Entregas: ${entregadas}/${num.length} paradas</div>
       </div>

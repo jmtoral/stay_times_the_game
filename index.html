@@ -1102,34 +1102,40 @@ function entrarParada(i){
   iniciarMinijuego(i);
 }
 
-// Actualizar NPS en vivo en el panel (conforme avanza el stay time)
+// Actualizar NPS en vivo en el panel proyectando el tiempo restante al ritmo del plan
 function actualizarNpsVivo(i){
-  const desv = G._stayReal - G.plan.stay[i];
-  const n = calcNps(desv);
+  const mCompletadas = (G.maniobras[i] || []).length;
+  const nTotal = num[i];
+  const restMani = Math.max(0, nTotal - mCompletadas);
+  const tiempoProyectado = G._stayReal + restMani * CONFIG.plan.minPorManiobra;
+  const desvProyectada = tiempoProyectado - G.plan.stay[i];
+  const n = calcNps(desvProyectada);
   $('npsVivo').innerHTML = `${n.emoji} NPS ${n.nps}% · ${n.label}`;
 }
 
 function salirParada(i){
-  // Calcular NPS final de la parada (si no fue rechazo, que ya lo tiene)
+  // Stay Time real final acumulado (fijo + eventos + maniobras)
+  const stayReal = G.rechazoReal[i]
+    ? (G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin)
+    : G._stayReal;
+
+  // Calcular NPS final consistente
   if (!G.rechazoReal[i]){
-    const stayReal = G._stayReal + G.maniobras[i].reduce((a,b)=>a+b,0);
     const n = npsParada(stayReal, G.plan.stay[i], false, false);
     G.npsReal[i] = n;
   }
 
   const nps = G.npsReal[i];
   const atraso = G.llegadaReal[i] - G.plan.llegada[i];
-  const stayReal = G.rechazoReal[i]
-    ? (G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin)
-    : (G._stayReal + G.maniobras[i].reduce((a,b)=>a+b,0));
 
   // Resumen con emoji NPS
   $('rdEmoji').textContent = nps.emoji;
   $('rdNpsLabel').textContent = `NPS ${nps.nps}% · ${nps.label}`;
-  $('rdTitulo').innerHTML = `Atraso: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
+  $('rdTitulo').innerHTML = `Atraso de llegada: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
   $('rdDetalle').innerHTML =
     `<b>${nombreParada(i)}</b> · ${canalLabel(i)}<br>`+
-    `Stay Time real ${Math.round(stayReal)} min vs planeado ${Math.round(G.plan.stay[i])} min`;
+    `Stay Time real <b>${Math.round(stayReal)} min</b> vs planeado <b>${Math.round(G.plan.stay[i])} min</b> (` +
+    `<span class="${stayReal>G.plan.stay[i]?'neg':stayReal<G.plan.stay[i]?'pos':'zero'}">${firma(stayReal - G.plan.stay[i])} min</span>)`;
   $('resumenDesv').classList.add('on');
 
   setTimeout(()=>{
@@ -1275,13 +1281,11 @@ function estadoResultados(){
   const costos = calcularCostos(G.camion, sim);
   const estrellas = estrellasPara(costos.total);
 
-  // NPS por parada (para paradas que no se jugaron: no entregadas)
+  // NPS por parada (100% consistente con desv = stay real - stay plan)
   const npsArr = sim.paradas.map(p => {
-    if (G.npsReal[p.i]) return G.npsReal[p.i];
     if (p.noEntregada) return { emoji:'🤬', nps:0, label:'No entregado' };
     if (p.rechazo) return { emoji:'🤬', nps:0, label:'Rechazado' };
-    const n = npsParada(p.stay, G.plan.stay[p.i], p.rechazo, p.noEntregada);
-    return n;
+    return npsParada(p.stay, G.plan.stay[p.i], false, false);
   });
   const npsValues = npsArr.map(n=>n.nps);
   const npsPromedio = npsValues.length ? (npsValues.reduce((a,b)=>a+b,0) / npsValues.length) : 0;

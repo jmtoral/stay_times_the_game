@@ -25,8 +25,7 @@
   @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
   @keyframes slideDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
   @keyframes pulseGlow { 0%,100%{box-shadow:0 0 20px rgba(255,0,0,.15)} 50%{box-shadow:0 0 40px rgba(255,0,0,.35)} }
-  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-  @keyframes needleGlow { 0%,100%{filter:drop-shadow(0 0 4px rgba(255,255,255,.6))} 50%{filter:drop-shadow(0 0 10px rgba(255,255,255,1))} }
+  @keyframes needleGlow { 0%,100%{ filter: drop-shadow(0 0 6px rgba(56,189,248,.8)) drop-shadow(0 0 16px rgba(255,255,255,.9)); } 50%{ filter: drop-shadow(0 0 12px rgba(56,189,248,1)) drop-shadow(0 0 26px rgba(255,255,255,1)); } }
   @keyframes toastIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
   @keyframes npsReveal { from{opacity:0;transform:scale(.6)} to{opacity:1;transform:scale(1)} }
   @keyframes starPop { 0%{transform:scale(0)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
@@ -248,9 +247,12 @@
 
   /* NPS en vivo en el panel */
   #npsVivo{
-    margin-top:8px; font-size:20px; text-align:center; min-height:28px;
-    font-weight:700;
+    margin-top:8px; font-size:15px; text-align:center; min-height:28px;
+    font-weight:600; line-height:1.4;
   }
+  .badge-promotor{ background:rgba(34,197,94,.18); color:#22c55e; border:1px solid rgba(34,197,94,.4); border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; display:inline-block; }
+  .badge-pasivo{ background:rgba(234,179,8,.18); color:#eab308; border:1px solid rgba(234,179,8,.4); border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; display:inline-block; }
+  .badge-detractor{ background:rgba(239,68,68,.18); color:#ef4444; border:1px solid rgba(239,68,68,.4); border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; display:inline-block; }
 
   /* toasts / avisos */
   #avisos{ position:absolute; top:104px; right:14px; width:min(300px,52vw);
@@ -304,18 +306,52 @@
   #mjZonaTxt{ font-size:12px; color:var(--txt-secondary); font-weight:500; text-shadow:0 2px 8px rgba(0,0,0,.8); }
 
   #mjBarra{
-    position:relative; height:56px;
-    border-radius:var(--radius-sm);
+    position:relative; height:46px;
+    border-radius:999px;
+    background:rgba(0,0,0,.65);
+    border:1.5px solid rgba(255,255,255,.22);
+    box-shadow:0 8px 32px rgba(0,0,0,.7), inset 0 2px 6px rgba(0,0,0,.7), 0 0 24px rgba(0,0,0,.5);
+    overflow:visible;
+    padding:4px;
+  }
+  #mjTrack{
+    width:100%; height:100%;
+    border-radius:999px;
     overflow:hidden;
-    border:2px solid rgba(255,255,255,.2);
-    box-shadow:0 6px 28px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.15);
+    position:relative;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.5);
+  }
+  #mjBullseyeLine{
+    position:absolute; left:50%; top:0; bottom:0; width:2px;
+    background:rgba(255,255,255,.85);
+    box-shadow:0 0 8px rgba(255,255,255,.9);
+    transform:translateX(-50%);
+    z-index:2;
+    pointer-events:none;
   }
   #mjAguja{
-    position:absolute; top:-4px; bottom:-4px; width:5px;
-    background:#ffffff;
-    box-shadow:0 0 14px #ffffff, 0 0 6px #ffffff, 0 0 20px rgba(255,255,255,.9);
-    border-radius:3px;
+    position:absolute; top:-8px; bottom:-8px; width:4px;
+    background:linear-gradient(to bottom, #ffffff 0%, #bae6fd 40%, #ffffff 60%, #38bdf8 100%);
+    box-shadow:0 0 10px #ffffff, 0 0 20px #38bdf8, 0 0 35px rgba(56,189,248,.8);
+    border-radius:2px;
+    transform:translateX(-50%);
+    z-index:10;
+    pointer-events:none;
     animation:needleGlow 1.2s ease-in-out infinite;
+  }
+  #mjAguja::before{
+    content:''; position:absolute; top:-6px; left:50%; width:12px; height:12px;
+    background:linear-gradient(135deg, #ffffff 0%, #38bdf8 100%);
+    transform:translateX(-50%) rotate(45deg);
+    border-radius:2px;
+    box-shadow:0 0 12px #38bdf8, 0 2px 6px rgba(0,0,0,.6);
+  }
+  #mjAguja::after{
+    content:''; position:absolute; bottom:-6px; left:50%; width:12px; height:12px;
+    background:linear-gradient(135deg, #38bdf8 0%, #ffffff 100%);
+    transform:translateX(-50%) rotate(45deg);
+    border-radius:2px;
+    box-shadow:0 0 12px #38bdf8, 0 -2px 6px rgba(0,0,0,.6);
   }
   #mjFeedback{
     text-align:center; font-size:20px; font-weight:800; min-height:28px; margin-top:6px;
@@ -495,7 +531,12 @@
       <div id="mjContador">Maniobra 1 de 4</div>
       <div id="mjZonaTxt">Detén la aguja en la zona verde</div>
     </div>
-    <div id="mjBarra"><div id="mjAguja"></div></div>
+    <div id="mjBarra">
+      <div id="mjTrack">
+        <div id="mjBullseyeLine"></div>
+      </div>
+      <div id="mjAguja"></div>
+    </div>
     <div id="mjFeedback">&nbsp;</div>
     <div id="mjControles">
       <button class="primary interactivo" id="btnDescargar">DESCARGAR ▸ (Espacio)</button>
@@ -610,29 +651,30 @@ const CONFIG = {
     costoCajaNoEntregada: 12
   },
 
-  // Estrellas basadas DIRECTAMENTE en el NPS (Satisfacción del Cliente)
+  // Estrellas basadas en el NPS Global Clásico (-100 a +100)
   estrellas: [
-    { minNps: 90, estrellas: 5, label: 'Servicio de Excelencia (90-100%)' },
-    { minNps: 75, estrellas: 4, label: 'Alto Desempeño (75-89%)' },
-    { minNps: 60, estrellas: 3, label: 'Cumplimiento Estándar (60-74%)' },
-    { minNps: 40, estrellas: 2, label: 'Oportunidad de Mejora (40-59%)' },
-    { minNps: 0,  estrellas: 1, label: 'Servicio Crítico (<40%)' }
+    { minNps: 75,  estrellas: 5, label: 'Clase Mundial (NPS ≥ +75)' },
+    { minNps: 50,  estrellas: 4, label: 'Excelente (NPS +50 a +74)' },
+    { minNps: 20,  estrellas: 3, label: 'Aceptable (NPS +20 a +49)' },
+    { minNps: 0,   estrellas: 2, label: 'En Riesgo (NPS 0 a +19)' },
+    { minNps: -100,estrellas: 1, label: 'Crítico (NPS < 0)' }
   ],
 
-  // NPS del cliente: calificación por parada según desviación vs plan esperado.
-  // Hacerlo bien (verdes) genera 90% - 100% de NPS y premia la destreza.
+  // Calificación del cliente por parada (escala 1 a 10)
+  // Promotores (9-10), Pasivos (7-8), Detractores (0-6)
   nps: {
-    umbrales: [
-      { maxDesvMin: 0,          emoji:'😍', nps:100, label:'Encantado' },
-      { maxDesvMin: 2,          emoji:'😊', nps:92,  label:'Muy satisfecho' },
-      { maxDesvMin: 5,          emoji:'😊', nps:82,  label:'Satisfecho' },
-      { maxDesvMin: 9,          emoji:'🙂', nps:65,  label:'Aceptable' },
-      { maxDesvMin: 15,         emoji:'😐', nps:45,  label:'Inconforme' },
-      { maxDesvMin: 22,         emoji:'😠', nps:25,  label:'Insatisfecho' },
-      { maxDesvMin: Infinity,   emoji:'🤬', nps:10,  label:'Pésimo' }
+    calificaciones: [
+      { maxDesvMin: 0,          nota: 10, tipo:'promotor',  emoji:'😍', label:'Excelente' },
+      { maxDesvMin: 1.5,        nota: 9,  tipo:'promotor',  emoji:'😍', label:'Muy satisfecho' },
+      { maxDesvMin: 3.5,        nota: 8,  tipo:'pasivo',    emoji:'😊', label:'Satisfecho' },
+      { maxDesvMin: 5.5,        nota: 7,  tipo:'pasivo',    emoji:'🙂', label:'Aceptable' },
+      { maxDesvMin: 8.0,        nota: 5,  tipo:'detractor', emoji:'😐', label:'Inconforme' },
+      { maxDesvMin: 11.0,       nota: 3,  tipo:'detractor', emoji:'😠', label:'Molesto' },
+      { maxDesvMin: Infinity,   nota: 1,  tipo:'detractor', emoji:'🤬', label:'Pésimo' }
     ],
-    rechazoNps: 0,       // NPS de paradas rechazadas por ventana (0%)
-    noEntregadaNps: 0     // NPS de paradas no entregadas por corte de jornada (0%)
+    rechazoNota: 0,       // Nota 0 en rechazo (Detractor)
+    noEntregadaNota: 0,    // Nota 0 en no entregada (Detractor)
+    penalizacionNpsPorMinExtra: 2.0 // Cada minuto en ROJO (>15:00) resta -2 pts de NPS neto
   },
 
   // Sistema de puntuación granular (para discriminar desempeños con alta precisión)
@@ -641,7 +683,7 @@ const CONFIG = {
     verde: 750,             // Zona verde estándar
     amarillo: 350,          // Zona amarilla
     rojo: 100,              // Zona roja
-    bonusNpsFactor: 500,    // NPS% * 500 -> hasta 50,000 pts de satisfacción
+    bonusNpsFactor: 250,    // (NPS + 100) * 250 -> hasta 50,000 pts con NPS +100
     bonusMinutoAhorro: 100, // Pts por cada minuto ahorrado antes de las 15:00
     bonusParadaOk: 2000     // Pts por parada entregada a tiempo
   },
@@ -700,18 +742,59 @@ function canalBadge(i){
 }
 
 /* =====================================================================
-   NPS — calificación del cliente por parada
+   CALIFICACIÓN DE CLIENTES (1 a 10) Y NPS GLOBAL CLÁSICO
    ===================================================================== */
-function calcNps(desvMin){
-  for (const u of CONFIG.nps.umbrales)
-    if (desvMin <= u.maxDesvMin) return u;
-  return CONFIG.nps.umbrales[CONFIG.nps.umbrales.length-1];
+function formatNps(val){
+  const v = Math.round(val);
+  return v > 0 ? `+${v}` : `${v}`;
 }
-// NPS para una parada dada su desviación. Rechazos y no entregadas → NPS 0.
-function npsParada(stayReal, stayPlan, rechazo, noEntregada){
-  if (rechazo || noEntregada) return { emoji:'🤬', nps:0, label:'No entregado' };
-  const desv = stayReal - stayPlan;
-  return calcNps(desv);
+
+function calcClienteNota(desvMin){
+  for (const c of CONFIG.nps.calificaciones)
+    if (desvMin <= c.maxDesvMin) return c;
+  return CONFIG.nps.calificaciones[CONFIG.nps.calificaciones.length - 1];
+}
+
+// Evaluación individual del cliente en cada parada (calificación del 1 al 10)
+function evaluarParadaCliente(stayReal, stayPlan, rechazo, noEntregada, atrasoLlegada = 0){
+  if (rechazo) return { nota: 0, tipo: 'detractor', emoji: '🤬', label: 'Rechazado' };
+  if (noEntregada) return { nota: 0, tipo: 'detractor', emoji: '🤬', label: 'No entregado' };
+  const desv = (stayReal - stayPlan) + Math.max(0, atrasoLlegada * 0.7);
+  return calcClienteNota(desv);
+}
+
+// Cálculo del NPS Global Clásico (% Promotores - % Detractores)
+function calcularNpsGlobal(evaluaciones, tiempoExtra = 0){
+  const total = evaluaciones.length;
+  if (!total) return { nps: 0, npsBase: 0, castigoTiempoExtra: 0, promotores: 0, pasivos: 0, detractores: 0, pctProm: 0, pctPas: 0, pctDet: 0, total: 0 };
+
+  let promotores = 0, pasivos = 0, detractores = 0;
+  evaluaciones.forEach(e => {
+    if (e.tipo === 'promotor' || e.nota >= 9) promotores++;
+    else if (e.tipo === 'pasivo' || e.nota >= 7) pasivos++;
+    else detractores++;
+  });
+
+  const pctProm = Math.round((promotores / total) * 100);
+  const pctPas = Math.round((pasivos / total) * 100);
+  const pctDet = Math.round((detractores / total) * 100);
+
+  const npsBase = pctProm - pctDet;
+  const castigoTiempoExtra = Math.round(tiempoExtra * CONFIG.nps.penalizacionNpsPorMinExtra);
+  const npsFinal = Math.max(-100, Math.min(100, npsBase - castigoTiempoExtra));
+
+  return {
+    nps: npsFinal,
+    npsBase,
+    castigoTiempoExtra,
+    promotores,
+    pasivos,
+    detractores,
+    pctProm,
+    pctPas,
+    pctDet,
+    total
+  };
 }
 
 /* =====================================================================
@@ -755,13 +838,14 @@ function renderLeaderboard(containerId, highlightNombre){
     const medallas = ['🥇','🥈','🥉'];
     const filas = lb.map((e,i) => {
       const hl = highlightNombre && e.nombre === highlightNombre && e._fresh ? ' class="lb-highlight"' : '';
-      const pts = (e.puntos ? e.puntos : Math.round((e.npsPromedio || 70) * 500 + 20000)).toLocaleString();
+      const pts = (e.puntos ? e.puntos : Math.round(((e.npsPromedio || 50) + 100) * 250 + 20000)).toLocaleString();
+      const npsTxt = e.npsPromedio != null ? formatNps(e.npsPromedio) : '+80';
       return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left"><b>${e.nombre}</b></td>` +
         `<td style="color:#f59e0b;font-weight:700">${pts}</td>` +
-        `<td>${Math.round(e.npsPromedio)}%</td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
+        `<td><b>${npsTxt}</b></td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
         `<td>$${e.costoTotal}</td><td style="color:#eab308">${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
     }).join('');
-    el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>Puntos</th><th>NPS</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
+    el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>Puntos</th><th>NPS Global</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
   };
 
   // Render instantáneo local
@@ -800,6 +884,21 @@ async function agregarPuntaje(entry){
   }
   return top;
 }
+
+// Función administrativa interna para reiniciar el ranking (solo bajo solicitud)
+window.adminResetLeaderboard = async function(secret = 'jmtoral_staytimes_admin_2026'){
+  try { localStorage.removeItem(LB_KEY); } catch(e){}
+  if (CONFIG.leaderboard.apiUrl){
+    try {
+      await fetch(CONFIG.leaderboard.apiUrl.replace(/\/$/, '') + '/api/reset', {
+        method: 'POST',
+        headers: { 'X-Admin-Secret': secret }
+      });
+    } catch(e){}
+  }
+  renderLeaderboard('lbMenu');
+  console.log('Leaderboard reiniciado correctamente.');
+};
 
 /* =====================================================================
    MODELO DE CÁLCULO
@@ -902,11 +1001,11 @@ function calcularCostos(camion, sim){
   return { extra, cRechazo, cCajas, total, rechazos, cajasPerdidas };
 }
 
-// Las estrellas corresponden directamente al NPS promedio
-function estrellasPara(npsPromedio, truncado, rechazos){
+// Las estrellas corresponden directamente al NPS Global (-100 a +100)
+function estrellasPara(npsGlobal, truncado, rechazos){
   if (truncado || (rechazos && rechazos >= 2)) return 1;
   for (const u of CONFIG.estrellas) {
-    if (npsPromedio >= u.minNps) return u.estrellas;
+    if (npsGlobal >= u.minNps) return u.estrellas;
   }
   return 1;
 }
@@ -995,25 +1094,43 @@ const roadLine = new THREE.Mesh(
 roadLine.position.set(0, 0.06, 3.2);
 scene.add(roadLine);
 
-// Buildings
-function edificio(x,z,w,h,d,color){
+// Skyline de fondo distante (alejado a Z = -11 para no encimarse con las paradas en Z = -2.5)
+function edificioFondo(x,z,w,h,d,color){
   const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),
-    new THREE.MeshStandardMaterial({ color, roughness:.85 }));
+    new THREE.MeshStandardMaterial({ color, roughness:0.9 }));
   m.position.set(x, h/2, z);
-  scene.add(m); return m;
+  scene.add(m);
+  return m;
 }
-for (let i=0;i<11;i++){
-  const h = 1.6+((i*7)%3)*0.8;
-  const c = 0x2e1f23 + ((i*23) % 8) * 0x020202;
-  edificio(-14 + i*3, -4.2, 2.2, h, 2.2, c);
-  // Window glow
-  if (i%2===0) {
+
+// 1. Fila de rascacielos lejanos de fondo (Z = -10.5 a -12.5)
+for (let i = 0; i < 14; i++){
+  const x = -20 + i * 3.2;
+  const h = 2.8 + ((i * 7) % 5) * 0.9;
+  const c = 0x1a1215 + ((i * 17) % 6) * 0x010101;
+  const b = edificioFondo(x, -11.0, 2.6, h, 3.0, c);
+  // Ventanas iluminadas en la distancia
+  if (i % 2 === 0){
     const win = new THREE.Mesh(
-      new THREE.BoxGeometry(0.35, 0.35, 0.01),
-      new THREE.MeshBasicMaterial({ color:0xffaa55, transparent:true, opacity:0.4 }));
-    win.position.set(-14 + i*3, h*0.6, -3.1);
+      new THREE.BoxGeometry(0.35, 0.35, 0.02),
+      new THREE.MeshBasicMaterial({ color: 0xffaa55, transparent: true, opacity: 0.35 }));
+    win.position.set(x, h * 0.65, -9.48);
     scene.add(win);
   }
+}
+
+// 2. Flanco izquierdo lejano (X <= -8.5, Z = -5.5)
+for (let i = 0; i < 3; i++){
+  const x = -15 + i * 2.8;
+  const h = 2.2 + (i % 2) * 0.8;
+  edificioFondo(x, -5.5, 2.4, h, 2.6, 0x22181b);
+}
+
+// 3. Flanco derecho lejano (X >= 11.5, Z = -5.5)
+for (let i = 0; i < 3; i++){
+  const x = 12 + i * 2.8;
+  const h = 2.2 + (i % 2) * 0.8;
+  edificioFondo(x, -5.5, 2.4, h, 2.6, 0x22181b);
 }
 
 /* ---- Truck: OBJ model with procedural fallback ---- */
@@ -1090,79 +1207,301 @@ function buildProceduralTruck(){
 // Build procedural immediately as fallback while OBJ loads
 buildProceduralTruck();
 
-/* ---- Destination building ---- */
-const destino = new THREE.Mesh(new THREE.BoxGeometry(2.4,3,2.4),
-  new THREE.MeshStandardMaterial({ color:RED[600], roughness:.9 }));
-scene.add(destino);
-const marquesina = new THREE.Mesh(new THREE.BoxGeometry(2.8,0.15,1.2),
-  new THREE.MeshStandardMaterial({ color:RED[300], roughness:.7 }));
-scene.add(marquesina);
-const paletaDestino = [RED[300], RED[400], RED[500], RED[600], RED[700], RED[200], RED[400]];
+/* =====================================================================
+   MODELOS 3D DE DESTINOS / COMERCIOS (OBJ)
+   ===================================================================== */
+const edificiosGroup = new THREE.Group();
+scene.add(edificiosGroup);
+
+const EDIFICIOS = {
+  'tiendita-de-barrio':  { file: 'tiendita-de-barrio.obj',  scale: 0.95, pos: [1.5, 0.05, -2.5], rotY: 0, obj: null },
+  'tiendita-de-barri2o': { file: 'tiendita-de-barri2o.obj', scale: 0.90, pos: [1.5, 0.05, -2.5], rotY: 0, obj: null },
+  'supermarket':         { file: 'supermarket.obj',         scale: 0.42, pos: [1.5, 0.0, -1.2],  rotY: 0, obj: null },
+  'restaurante-chino':   { file: 'restaurante-chino.obj',   scale: 0.38, pos: [1.5, 0.05, -2.1], rotY: 0, obj: null },
+};
+
+const MATS_TIENDITA_1 = {
+  'concrete':     new THREE.MeshStandardMaterial({ color: 0x8e929a, roughness: 0.85 }),
+  'stucco':       new THREE.MeshStandardMaterial({ color: 0xedebe8, roughness: 0.9 }),
+  'shade_dark':   new THREE.MeshStandardMaterial({ color: 0x2b2d35, roughness: 0.9 }),
+  'wood':         new THREE.MeshStandardMaterial({ color: 0x854d0e, roughness: 0.75 }),
+  'metal':        new THREE.MeshStandardMaterial({ color: 0x71717a, roughness: 0.5, metalness: 0.4 }),
+  'paint_red':    new THREE.MeshStandardMaterial({ color: 0xd00000, roughness: 0.4, metalness: 0.1 }),
+  'enamel':       new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.1 }),
+  'glass_green':  new THREE.MeshStandardMaterial({ color: 0x6ee7b7, roughness: 0.2, transparent: true, opacity: 0.75 }),
+  'snack_yellow': new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 })
+};
+
+const MATS_TIENDITA_2 = {
+  'tierra':          new THREE.MeshStandardMaterial({ color: 0x6d4c41, roughness: 0.95 }),
+  'bloque_concreto': new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.9 }),
+  'repello_celeste': new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.85 }),
+  'zinc_oxidado':    new THREE.MeshStandardMaterial({ color: 0x78716c, roughness: 0.7, metalness: 0.3 }),
+  'oxido':           new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.85 }),
+  'lona_azul':       new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.7 }),
+  'madera_vieja':    new THREE.MeshStandardMaterial({ color: 0x5c3d2e, roughness: 0.85 }),
+  'hierro':          new THREE.MeshStandardMaterial({ color: 0x3f3f46, roughness: 0.6, metalness: 0.5 }),
+  'pintura_blanca':  new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6 }),
+  'lamina_roja':     new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.55 }),
+  'plastico_rojo':   new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.4 }),
+  'vidrio_verde':    new THREE.MeshStandardMaterial({ color: 0x34d399, roughness: 0.2, transparent: true, opacity: 0.7 }),
+  'plastico_azul':   new THREE.MeshStandardMaterial({ color: 0x2563eb, roughness: 0.4 }),
+  'bolsa_amarilla':  new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5 }),
+  'bolsa_naranja':   new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.5 }),
+  'llanta':          new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95 })
+};
+
+const MATS_SUPERMARKET = {
+  'asphalt':    new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.9 }),
+  'concrete':   new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 }),
+  'linepaint':  new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.6 }),
+  'stucco':     new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.85 }),
+  'darkmetal':  new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.5, metalness: 0.4 }),
+  'accent':     new THREE.MeshStandardMaterial({ color: 0xd00000, roughness: 0.4, metalness: 0.1 }),
+  'metal':      new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4, metalness: 0.6 }),
+  'warmpanel':  new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.65 }),
+  'glass':      new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.65 }),
+  'bark':       new THREE.MeshStandardMaterial({ color: 0x573418, roughness: 0.9 }),
+  'produce':    new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 }),
+  'foliage':    new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.85 })
+};
+
+const MATS_RESTAURANTE = {
+  'piedra':        new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.85 }),
+  'oro':           new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.35, metalness: 0.7 }),
+  'cremaPapel':    new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.65 }),
+  'lacaRoja':      new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.35, metalness: 0.1 }),
+  'maderaOscura':  new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.75 }),
+  'hierro':        new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.5 }),
+  'tejaVerde':     new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.45 }),
+  'rojoRefresco':  new THREE.MeshStandardMaterial({ color: 0xd00000, roughness: 0.35, metalness: 0.1 })
+};
+
+const MATS_MAP = {
+  'tiendita-de-barrio':  MATS_TIENDITA_1,
+  'tiendita-de-barri2o': MATS_TIENDITA_2,
+  'supermarket':         MATS_SUPERMARKET,
+  'restaurante-chino':   MATS_RESTAURANTE
+};
+
+// Cargar los 4 modelos de forma asíncrona
+for (const key in EDIFICIOS) {
+  const def = EDIFICIOS[key];
+  const mats = MATS_MAP[key];
+  loader.load(
+    def.file,
+    (obj) => {
+      obj.traverse((child) => {
+        if (child.isMesh) {
+          const matName = child.material?.name || '';
+          child.material = mats[matName] || mats[Object.keys(mats)[0]];
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      obj.scale.setScalar(def.scale);
+      obj.position.set(def.pos[0], def.pos[1], def.pos[2]);
+      obj.rotation.y = def.rotY;
+      obj.visible = false;
+      edificiosGroup.add(obj);
+      def.obj = obj;
+      if (ultimoDestinoSpec) configurarDestino(ultimoDestinoSpec);
+    },
+    undefined,
+    (err) => console.warn(`Error loading building ${def.file}:`, err.message || err)
+  );
+}
+
+// Procedural CEDIS Warehouse
+const cedisGroup = new THREE.Group();
+const cedisMain = new THREE.Mesh(new THREE.BoxGeometry(5.2, 4.2, 4.0),
+  new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7, metalness: 0.1 }));
+cedisMain.position.set(2.4, 2.1, -1.8);
+const cedisDoor = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.6, 0.2),
+  new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.5, metalness: 0.5 }));
+cedisDoor.position.set(2.4, 1.3, 0.22);
+const cedisAwning = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.25, 1.4),
+  new THREE.MeshStandardMaterial({ color: 0xd00000, roughness: 0.4 }));
+cedisAwning.position.set(2.4, 3.2, 0.4);
+cedisGroup.add(cedisMain, cedisDoor, cedisAwning);
+scene.add(cedisGroup);
+
+// Fallback procedural generic building
+const destinoFallback = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3, 2.4),
+  new THREE.MeshStandardMaterial({ color: RED[600], roughness: 0.9 }));
+const marquesinaFallback = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.15, 1.2),
+  new THREE.MeshStandardMaterial({ color: RED[300], roughness: 0.7 }));
+destinoFallback.add(marquesinaFallback);
+marquesinaFallback.position.set(0, 1.6, 1.0);
+destinoFallback.position.set(2.6, 1.5, -1.4);
+scene.add(destinoFallback);
+destinoFallback.visible = false;
+
+let ultimoDestinoSpec = null;
 function configurarDestino(spec){
+  ultimoDestinoSpec = spec;
+
+  // Ocultar todos los edificios primero
+  cedisGroup.visible = false;
+  destinoFallback.visible = false;
+  for (const k in EDIFICIOS) {
+    if (EDIFICIOS[k].obj) EDIFICIOS[k].obj.visible = false;
+  }
+
   if (spec.tipo === 'cedis'){
-    destino.geometry.dispose();
-    destino.geometry = new THREE.BoxGeometry(4, 4, 3.2);
-    destino.position.set(2.4, 2, -1.6);
-    destino.material.color.setHex(RED[800]);
-    marquesina.scale.set(1.6, 1, 1.4);
-    marquesina.material.color.setHex(RED[300]);
-    marquesina.position.set(2.4, 4.1, -0.4);
+    cedisGroup.visible = true;
     cajasGroup.visible = false;
     return;
   }
-  const i = spec.i;
-  const moderno = spec.canal === 'moderno';
-  const h = moderno ? (3.0 + ((i*37) % 3) * 0.7) : (2.0 + ((i*29) % 2) * 0.6);
-  const w = moderno ? (3.4 + ((i*17) % 2) * 0.8) : (1.8 + ((i*13) % 2) * 0.4);
-  const dd = moderno ? 3.0 : 2.2;
-  destino.geometry.dispose();
-  destino.geometry = new THREE.BoxGeometry(w, h, dd);
-  destino.position.set(2.6 + (moderno?0.3:0), h/2, -1.4 + ((i*53) % 3) * 0.5);
-  destino.material.color.setHex(paletaDestino[i % paletaDestino.length]);
-  marquesina.scale.set(moderno ? 1.5 : 0.9, 1, moderno ? 1.4 : 1);
-  marquesina.material.color.setHex(moderno ? RED[300] : RED[600]);
-  marquesina.position.set(2.6 + (moderno?0.3:0), h + 0.1, 0.2);
+
   cajasGroup.visible = true;
+  const i = spec.i;
+  const nombre = (nombreParada(i) || '').toLowerCase();
+  const canal = spec.canal || canalDe(i);
+
+  // Mapear cada parada a su modelo 3D específico
+  let modelKey = 'tiendita-de-barrio';
+  if (canal === 'moderno') {
+    modelKey = (nombre.includes('restaurante') || nombre.includes('chino') || nombre.includes('valle') || i === 4)
+      ? 'restaurante-chino'
+      : 'supermarket';
+  } else {
+    // Canal tradicional: alternar entre la tiendita 1 y tiendita 2 rústica
+    modelKey = (i === 2 || i % 2 === 1) ? 'tiendita-de-barri2o' : 'tiendita-de-barrio';
+  }
+
+  const def = EDIFICIOS[modelKey];
+  if (def && def.obj) {
+    def.obj.visible = true;
+  } else {
+    // Fallback mientras carga el modelo
+    destinoFallback.visible = true;
+  }
 }
 
+/* ---- Crate pile: 3D OBJ model positioned on receiving sidewalk (no overlap with truck) ---- */
 const cajasGroup = new THREE.Group();
-cajasGroup.position.set(-3.6, 0, 2.4);
+cajasGroup.position.set(-0.5, 0, 0.85);
 scene.add(cajasGroup);
+
+const crateMaterials = {
+  'crate_red':        new THREE.MeshStandardMaterial({ color:0xd00000, roughness:0.35, metalness:0.08 }),
+  'crate_red_shadow': new THREE.MeshStandardMaterial({ color:0x880000, roughness:0.55, metalness:0.05 }),
+  'glass':            new THREE.MeshStandardMaterial({ color:0x70b8a0, roughness:0.12, metalness:0.15, transparent:true, opacity:0.65 }),
+  'cola':             new THREE.MeshStandardMaterial({ color:0x180a05, roughness:0.3, metalness:0.05 }),
+  'cap_metal':        new THREE.MeshStandardMaterial({ color:0xdd1111, roughness:0.25, metalness:0.75 }),
+  'label_paper':      new THREE.MeshStandardMaterial({ color:0xffffff, roughness:0.45, metalness:0.02 })
+};
+
+let crateTemplate = null;
+let ultimaFraccionPila = 1;
+
+loader.load(
+  'caja-refrescos.obj',
+  (obj) => {
+    obj.traverse((child) => {
+      if (child.isMesh) {
+        const matName = child.material?.name || '';
+        child.material = crateMaterials[matName] || crateMaterials['crate_red'];
+      }
+    });
+    // Scale: original is 0.40 x 0.27 x 0.31 -> scale 2.0 makes it 0.80 x 0.55 x 0.62
+    obj.scale.setScalar(2.0);
+    crateTemplate = obj;
+    pintarPila(ultimaFraccionPila);
+  },
+  undefined,
+  (err) => {
+    console.warn('Crate OBJ load failed, using procedural fallback:', err.message || err);
+  }
+);
+
 function pintarPila(fraccion){
+  ultimaFraccionPila = fraccion;
   cajasGroup.clear();
-  const total = Math.max(0, Math.round(fraccion * 12));
-  const mat = new THREE.MeshStandardMaterial({ color:0xc27f3a, roughness:.85 });
-  for (let k=0;k<total;k++){
-    const b = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.5,0.72), mat);
-    b.position.set((k%2)*0.82, 0.25 + Math.floor(k/2)*0.55, ((k%3)-1)*0.1);
-    cajasGroup.add(b);
+  const total = Math.max(0, Math.round(fraccion * 8));
+  if (total === 0) return;
+
+  if (crateTemplate){
+    for (let k = 0; k < total; k++){
+      const c = crateTemplate.clone(true);
+      const col = k % 2;
+      const row = Math.floor(k / 2) % 2;
+      const layer = Math.floor(k / 4);
+      c.position.set(col * 0.86, layer * 0.55 + 0.02, row * 0.68 - 0.34);
+      cajasGroup.add(c);
+    }
+  } else {
+    // Procedural fallback while OBJ loads
+    const mat = new THREE.MeshStandardMaterial({ color:0xcc0000, roughness:.5 });
+    for (let k = 0; k < total; k++){
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.62), mat);
+      const col = k % 2;
+      const row = Math.floor(k / 2) % 2;
+      const layer = Math.floor(k / 4);
+      b.position.set(col * 0.86, 0.25 + layer * 0.55, row * 0.68 - 0.34);
+      cajasGroup.add(b);
+    }
   }
 }
 pintarPila(1);
 
-// Geocerca
-const GEO = { cx:0.4, cz:1.2, R:2.3 };
+// Geocerca GPS (proyección plana y luminosa sobre el pavimento, sin postes verticales)
+const GEO = { cx:0.4, cz:1.2, R:2.4 };
 const STOP_X_OUT = -3.4;
 const TEAL = 0x14b8a6;
 const geofenceGrp = new THREE.Group();
-geofenceGrp.position.set(GEO.cx, 0.02, GEO.cz);
-const geoFill = new THREE.Mesh(new THREE.CircleGeometry(GEO.R, 48),
-  new THREE.MeshBasicMaterial({ color:TEAL, transparent:true, opacity:0.13, depthWrite:false }));
+geofenceGrp.position.set(GEO.cx, 0.04, GEO.cz);
+
+// Relleno circular luminoso proyectado sobre el suelo
+const geoFill = new THREE.Mesh(
+  new THREE.CircleGeometry(GEO.R, 64),
+  new THREE.MeshBasicMaterial({
+    color: TEAL,
+    transparent: true,
+    opacity: 0.18,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -4
+  })
+);
 geoFill.rotation.x = -Math.PI/2;
-const geoRing = new THREE.Mesh(new THREE.RingGeometry(GEO.R-0.16, GEO.R, 48),
-  new THREE.MeshBasicMaterial({ color:TEAL, transparent:true, opacity:0.75, depthWrite:false }));
+
+// Anillo perimetral exterior
+const geoRing = new THREE.Mesh(
+  new THREE.RingGeometry(GEO.R - 0.10, GEO.R, 64),
+  new THREE.MeshBasicMaterial({
+    color: TEAL,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -6
+  })
+);
 geoRing.rotation.x = -Math.PI/2;
-const geoPosts = [];
-for (let a=0;a<8;a++){
-  const ang = a/8 * Math.PI*2;
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,0.7,8),
-    new THREE.MeshBasicMaterial({ color:TEAL }));
-  post.position.set(Math.cos(ang)*GEO.R, 0.35, Math.sin(ang)*GEO.R);
-  geoPosts.push(post); geofenceGrp.add(post);
-}
-geofenceGrp.add(geoFill, geoRing);
+
+// Anillo radar interior decorativo
+const geoInnerRing = new THREE.Mesh(
+  new THREE.RingGeometry(GEO.R * 0.55 - 0.04, GEO.R * 0.55, 64),
+  new THREE.MeshBasicMaterial({
+    color: TEAL,
+    transparent: true,
+    opacity: 0.35,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -4
+  })
+);
+geoInnerRing.rotation.x = -Math.PI/2;
+
+geofenceGrp.add(geoFill, geoRing, geoInnerRing);
 geofenceGrp.visible = false;
 scene.add(geofenceGrp);
+
 const geofence = { visible:false, fuera:false };
 function configurarGeocerca(estado){
   if (estado === null || estado === undefined){ geofenceGrp.visible=false; geofence.visible=false; return; }
@@ -1170,7 +1509,7 @@ function configurarGeocerca(estado){
   const col = estado ? RED[500] : TEAL;
   geoFill.material.color.setHex(col);
   geoRing.material.color.setHex(col);
-  geoPosts.forEach(p=>p.material.color.setHex(col));
+  geoInnerRing.material.color.setHex(col);
 }
 configurarDestino({ tipo:'cedis' });
 
@@ -1197,12 +1536,13 @@ function loop(now){
   }
 
   if (geofence.visible){
-    const base = geofence.fuera ? 0.24 : 0.12;
-    const amp  = geofence.fuera ? 0.16 : 0.04;
-    const sp   = geofence.fuera ? 3.4 : 1.3;
+    const base = geofence.fuera ? 0.26 : 0.14;
+    const amp  = geofence.fuera ? 0.18 : 0.06;
+    const sp   = geofence.fuera ? 3.4 : 1.5;
     const o = base + amp*Math.abs(Math.sin(animClock*sp));
     geoFill.material.opacity = o;
-    geoRing.material.opacity = Math.min(1, o + 0.5);
+    geoRing.material.opacity = Math.min(1, o + 0.6);
+    geoInnerRing.material.opacity = Math.min(0.8, o + 0.2);
     const s = geofence.fuera ? (1 + 0.025*Math.sin(animClock*3.4)) : 1;
     geofenceGrp.scale.set(s, 1, s);
   }
@@ -1455,16 +1795,20 @@ function entrarParada(i){
   iniciarMinijuego(i);
 }
 
-// Actualizar NPS en vivo en el panel proyectando el tiempo restante al ritmo del plan
+// Actualizar calificación del cliente (1 a 10) en vivo en el panel proyectando el tiempo restante
 function actualizarNpsVivo(i){
   const mCompletadas = (G.maniobras[i] || []).length;
   const nTotal = num[i];
   const restMani = Math.max(0, nTotal - mCompletadas);
-  // Proyección optimista si el jugador sigue descargando bien
   const tiempoProyectado = G._stayReal + restMani * CONFIG.mj.tVerde;
-  const desvProyectada = tiempoProyectado - G.plan.stay[i];
-  const n = calcNps(desvProyectada);
-  $('npsVivo').innerHTML = `${n.emoji} <b>NPS ${n.nps}%</b> · ${n.label}`;
+  const atrasoLlegada = Math.max(0, G.llegadaReal[i] - G.plan.llegada[i]);
+  const desvProyectada = (tiempoProyectado - G.plan.stay[i]) + atrasoLlegada * 0.7;
+  const ev = calcClienteNota(desvProyectada);
+
+  const badgeCls = ev.tipo === 'promotor' ? 'badge-promotor' : ev.tipo === 'pasivo' ? 'badge-pasivo' : 'badge-detractor';
+  const tipoNombre = ev.tipo === 'promotor' ? 'PROMOTOR' : ev.tipo === 'pasivo' ? 'PASIVO' : 'DETRACTOR';
+
+  $('npsVivo').innerHTML = `${ev.emoji} <b>Cliente: ${ev.nota}/10</b> · <span class="${badgeCls}">${tipoNombre}</span><div style="font-size:11px;color:var(--muted);margin-top:2px">${ev.label}</div>`;
 }
 
 function salirParada(i){
@@ -1473,19 +1817,21 @@ function salirParada(i){
     ? (G.camion.estacionamiento + CONFIG.ventana.gestionRechazoMin)
     : G._stayReal;
 
-  // Calcular NPS final consistente
-  if (!G.rechazoReal[i]){
-    const n = npsParada(stayReal, G.plan.stay[i], false, false);
-    G.npsReal[i] = n;
-  }
-
-  const nps = G.npsReal[i];
   const atraso = G.llegadaReal[i] - G.plan.llegada[i];
 
-  // Resumen con emoji NPS
-  $('rdEmoji').textContent = nps.emoji;
-  $('rdNpsLabel').textContent = `NPS ${nps.nps}% · ${nps.label}`;
-  $('rdNpsLabel').style.color = nps.nps >= 75 ? 'var(--ok)' : nps.nps >= 45 ? 'var(--warn)' : 'var(--bad)';
+  // Calcular calificación individual del cliente (1 a 10)
+  if (!G.rechazoReal[i]){
+    const ev = evaluarParadaCliente(stayReal, G.plan.stay[i], false, false, atraso);
+    G.npsReal[i] = ev;
+  }
+
+  const ev = G.npsReal[i];
+  const tipoColor = ev.tipo === 'promotor' ? 'var(--ok)' : ev.tipo === 'pasivo' ? 'var(--warn)' : 'var(--bad)';
+
+  // Resumen con emoji y nota
+  $('rdEmoji').textContent = ev.emoji;
+  $('rdNpsLabel').textContent = `Cliente: ${ev.nota}/10 · ${ev.tipo.toUpperCase()} (${ev.label})`;
+  $('rdNpsLabel').style.color = tipoColor;
   $('rdTitulo').innerHTML = `Atraso de llegada: <span class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)} min</span>`;
   $('rdDetalle').innerHTML =
     `<b>${nombreParada(i)}</b> · ${canalLabel(i)}<br>`+
@@ -1559,18 +1905,18 @@ function iniciarMinijuego(i){
 }
 
 function pintarZonas(green){
+  const track = $('mjTrack') || $('mjBarra');
   const y = CONFIG.mj.zonaAmarilla;
   const gL = 0.5 - green/2, gR = 0.5 + green/2;
   const yL = gL - y, yR = gR + y;
   const p = x => (x*100).toFixed(1)+'%';
-  // Gradient with glow effect
-  barraMJ.style.background =
+  track.style.background =
     `linear-gradient(90deg,`+
-    `${getComputedStyle(document.documentElement).getPropertyValue('--rojo').trim()} 0 ${p(Math.max(0,yL))},`+
-    `${getComputedStyle(document.documentElement).getPropertyValue('--amarillo').trim()} ${p(Math.max(0,yL))} ${p(gL)},`+
-    `${getComputedStyle(document.documentElement).getPropertyValue('--verde').trim()} ${p(gL)} ${p(gR)},`+
-    `${getComputedStyle(document.documentElement).getPropertyValue('--amarillo').trim()} ${p(gR)} ${p(Math.min(1,yR))},`+
-    `${getComputedStyle(document.documentElement).getPropertyValue('--rojo').trim()} ${p(Math.min(1,yR))} 100%)`;
+    `var(--rojo) 0 ${p(Math.max(0,yL))},`+
+    `var(--amarillo) ${p(Math.max(0,yL))} ${p(gL)},`+
+    `var(--verde) ${p(gL)} ${p(gR)},`+
+    `var(--amarillo) ${p(gR)} ${p(Math.min(1,yR))},`+
+    `var(--rojo) ${p(Math.min(1,yR))} 100%)`;
 }
 
 function arrancarManiobra(){
@@ -1677,21 +2023,24 @@ function estadoResultados(){
   const sim = simularJornada(G.camion, G.maniobras, G.eventos);
   const costos = calcularCostos(G.camion, sim);
 
-  // NPS por parada (100% consistente con desv = stay real - stay plan)
-  const npsArr = sim.paradas.map(p => {
-    if (p.noEntregada) return { emoji:'🤬', nps:0, label:'No entregado' };
-    if (p.rechazo) return { emoji:'🤬', nps:0, label:'Rechazado' };
-    return npsParada(p.stay, G.plan.stay[p.i], false, false);
+  // Evaluación individual de cada cliente (1 al 10)
+  const evaluaciones = sim.paradas.map(p => {
+    if (p.noEntregada) return { nota: 0, tipo: 'detractor', emoji: '🤬', label: 'No entregado' };
+    if (p.rechazo) return { nota: 0, tipo: 'detractor', emoji: '🤬', label: 'Rechazado' };
+    const atrasoLlegada = Math.max(0, p.llegada - G.plan.llegada[p.i]);
+    return evaluarParadaCliente(p.stay, G.plan.stay[p.i], false, false, atrasoLlegada);
   });
-  const npsValues = npsArr.map(n=>n.nps);
-  const npsPromedio = npsValues.length ? (npsValues.reduce((a,b)=>a+b,0) / npsValues.length) : 0;
+
+  // Cálculo del NPS Global Clásico (% Promotores - % Detractores)
+  const npsGlobal = calcularNpsGlobal(evaluaciones, sim.tiempoExtra);
+  const npsFinal = npsGlobal.nps;
   const entregadas = sim.paradas.filter(p => !p.noEntregada && !p.rechazo).length;
 
-  // Estrellas calculadas DIRECTAMENTE a partir del NPS
-  const estrellas = estrellasPara(npsPromedio, sim.truncado, costos.rechazos);
+  // Estrellas basadas en el NPS Global Clásico
+  const estrellas = estrellasPara(npsFinal, sim.truncado, costos.rechazos);
 
   // Puntuación Global Granular
-  const bonusNps = Math.round(npsPromedio * CONFIG.puntos.bonusNpsFactor);
+  const bonusNps = Math.max(0, Math.round((npsFinal + 100) * CONFIG.puntos.bonusNpsFactor));
   const minutosAhorro = Math.max(0, CONFIG.jornada.corteDuroMin - sim.cierre);
   const bonusTiempo = minutosAhorro * CONFIG.puntos.bonusMinutoAhorro;
   const bonusEntregas = entregadas * CONFIG.puntos.bonusParadaOk;
@@ -1706,7 +2055,7 @@ function estadoResultados(){
   traslados = trasladoTramo() * nTramos + CONFIG.bloques.cargaCEDIS + CONFIG.bloques.liquidacionFinal;
   const extra = sim.tiempoExtra;
 
-  // Tabla plan vs real
+  // Tabla plan vs real con Calificación 1-10 y Tipo de Cliente
   const filas = sim.paradas.map((p,idx) => {
     const planStay = G.plan.stay[p.i];
     const desv = p.stay - planStay;
@@ -1715,7 +2064,9 @@ function estadoResultados(){
     const est = p.noEntregada ? '❌ NO ENTREGADA'
               : p.rechazo ? '❌ RECHAZO' : '✅ OK';
     const geo = G.geocercas[p.i] ? ' 🛰️' : '';
-    const npsInfo = npsArr[idx];
+    const ev = evaluaciones[idx];
+    const badgeCls = ev.tipo === 'promotor' ? 'badge-promotor' : ev.tipo === 'pasivo' ? 'badge-pasivo' : 'badge-detractor';
+    const tipoLabel = ev.tipo === 'promotor' ? 'PROMOTOR (9-10)' : ev.tipo === 'pasivo' ? 'PASIVO (7-8)' : 'DETRACTOR (0-6)';
     return `<tr>
       <td><b>P${p.i+1}</b> ${nombreParada(p.i)}${geo}
         <div class="sub">${canalLabel(p.i)}</div></td>
@@ -1725,7 +2076,8 @@ function estadoResultados(){
       <td>${hhmm(planLleg)}</td>
       <td>${hhmm(p.llegada)}</td>
       <td class="${atraso>0?'neg':atraso<0?'pos':'zero'}">${firma(atraso)}</td>
-      <td style="font-size:16px;text-align:center" title="NPS ${npsInfo.nps}%">${npsInfo.emoji} ${npsInfo.nps}%</td>
+      <td style="font-size:15px;text-align:center"><b>${ev.emoji} ${ev.nota}/10</b></td>
+      <td style="text-align:center"><span class="${badgeCls}">${tipoLabel}</span></td>
       <td class="sub">${est}</td>
     </tr>`;
   }).join('');
@@ -1743,8 +2095,9 @@ function estadoResultados(){
     ['Tiempo extra', extra, 'var(--c-extra)']
   ]);
 
-  // NPS promedio badge (escala porcentual 0-100%)
-  const npsColor = npsPromedio >= 75 ? 'var(--ok)' : npsPromedio >= 50 ? 'var(--warn)' : 'var(--bad)';
+  // NPS Global Color
+  const npsColor = npsFinal >= 50 ? 'var(--ok)' : npsFinal >= 0 ? 'var(--warn)' : 'var(--bad)';
+  const npsFormatted = formatNps(npsFinal);
 
   $('resultados').innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;animation:fadeIn .5s ease-out">
@@ -1752,7 +2105,8 @@ function estadoResultados(){
            alt="Coca‑Cola" class="coca-logo-sm" onerror="this.style.display='none'">
       <h2 style="margin:0">Cierre de jornada</h2>
     </div>
-    ${sim.truncado ? '<div class="toast bad" style="margin-bottom:12px;pointer-events:auto">⏰ <b>No te dio tiempo.</b> ' + sim.paradas.filter(p=>p.noEntregada).length + ' parada(s) quedaron sin entrega.</div>' : ''}
+    ${sim.truncado ? '<div class="toast bad" style="margin-bottom:12px;pointer-events:auto">⏰ <b>No te dio tiempo.</b> ' + sim.paradas.filter(p=>p.noEntregada).length + ' parada(s) quedaron sin entrega (Detractores nota 0/10).</div>' : ''}
+    ${sim.tiempoExtra > 0 ? `<div class="toast bad" style="margin-bottom:12px;pointer-events:auto">🚨 <b>Jornada terminada en la ZONA ROJA (+${Math.round(sim.tiempoExtra)} min).</b> Castigo de <b>-${npsGlobal.castigoTiempoExtra} pts de NPS</b> por retraso general de la jornada.</div>` : ''}
     
     <div class="grid2">
       <div class="card kpi-hero card-accent">
@@ -1767,21 +2121,35 @@ function estadoResultados(){
         <div class="estrellas" style="color:#eab308;font-size:28px">${estrellasStr}</div>
         
         <div style="display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap">
-          <div class="nps-badge" style="color:${npsColor};font-size:20px;padding:4px 16px">
-            NPS Promedio: <b>${Math.round(npsPromedio)}%</b>
+          <div class="nps-badge" style="color:${npsColor};font-size:22px;padding:6px 18px">
+            NPS Global: <b>${npsFormatted}</b>
           </div>
-          <div class="nps-badge" style="color:var(--txt);font-size:18px;padding:4px 16px">
+          <div class="nps-badge" style="color:var(--txt);font-size:18px;padding:6px 18px">
             Cierre: <b>${hhmm(sim.cierre)}</b>
           </div>
         </div>
+
+        <!-- Desglose de Clientes Clásico NPS -->
+        <div style="margin-top:12px;padding:10px;background:rgba(0,0,0,.25);border-radius:var(--radius-sm);font-size:12px">
+          <div style="display:flex;justify-content:space-around;gap:8px;font-weight:700">
+            <span style="color:#22c55e">😍 ${npsGlobal.pctProm}% Promotores (${npsGlobal.promotores})</span>
+            <span style="color:#eab308">😊 ${npsGlobal.pctPas}% Pasivos (${npsGlobal.pasivos})</span>
+            <span style="color:#ef4444">🤬 ${npsGlobal.pctDet}% Detractores (${npsGlobal.detractores})</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+            Fórmula: % Promotores (${npsGlobal.pctProm}%) − % Detractores (${npsGlobal.pctDet}%) = <b>NPS ${formatNps(npsGlobal.npsBase)}</b>
+            ${npsGlobal.castigoTiempoExtra > 0 ? ` − ${npsGlobal.castigoTiempoExtra} pts zona roja = <b>${npsFormatted}</b>` : ''}
+          </div>
+        </div>
+
         <div class="sub" style="margin-top:8px">Entregas completadas: <b>${entregadas}/${num.length}</b> paradas · Tiempo extra: <b>${Math.round(sim.tiempoExtra)} min</b></div>
       </div>
 
       <div class="card" style="animation:slideUp .5s ease-out .15s both">
         <h3 style="font-size:15px;color:#f59e0b">🎯 Desglose de Puntos</h3>
         <div class="kv"><span class="muted">Precisión en Maniobras</span><b>+${(G.puntosManiobras||0).toLocaleString()} pts</b></div>
-        <div class="kv"><span class="muted">Satisfacción Cliente (NPS ${Math.round(npsPromedio)}%)</span><b>+${bonusNps.toLocaleString()} pts</b></div>
-        <div class="kv"><span class="muted">Eficiencia Horaria (${minutosAhorro} min de holgura)</span><b>+${bonusTiempo.toLocaleString()} pts</b></div>
+        <div class="kv"><span class="muted">NPS Global (${npsFormatted})</span><b>+${bonusNps.toLocaleString()} pts</b></div>
+        <div class="kv"><span class="muted">Eficiencia Horaria (${Math.round(minutosAhorro)} min de holgura)</span><b>+${bonusTiempo.toLocaleString()} pts</b></div>
         <div class="kv"><span class="muted">Paradas Entregadas (${entregadas})</span><b>+${bonusEntregas.toLocaleString()} pts</b></div>
         ${penalizacionCostos > 0 ? `<div class="kv" style="color:var(--bad)"><span>Penalizaciones por costos</span><b>-${penalizacionCostos.toLocaleString()} pts</b></div>` : ''}
         <hr style="border-color:var(--line);margin:8px 0">
@@ -1795,11 +2163,11 @@ function estadoResultados(){
     </div>
 
     <div class="card" style="margin-top:14px;animation:slideUp .5s ease-out .3s both">
-      <h3>Plan vs realidad — por parada</h3>
+      <h3>Plan vs realidad — Evaluación por parada</h3>
       <div class="scroll">
       <table>
         <thead><tr><th>Parada</th><th>Stay plan</th><th>Stay real</th><th>Desv.</th>
-          <th>Hora plan</th><th>Hora real</th><th>Atraso</th><th>NPS</th><th>Estado</th></tr></thead>
+          <th>Hora plan</th><th>Hora real</th><th>Atraso</th><th>Calificación</th><th>Cliente</th><th>Estado</th></tr></thead>
         <tbody>${filas}</tbody>
       </table>
       </div>
@@ -1832,11 +2200,11 @@ function estadoResultados(){
     </div>
   `;
 
-  // Guardar en leaderboard con PUNTOS granulares
+  // Guardar en leaderboard con PUNTOS granulares y NPS Global
   const entry = {
     nombre: G.nombreJugador || 'Anónimo',
     puntos: puntosTotal,
-    npsPromedio: Math.round(npsPromedio*10)/10,
+    npsPromedio: npsFinal,
     costoTotal: Math.round(costos.total),
     estrellas,
     paradasEntregadas: entregadas,
@@ -1897,8 +2265,7 @@ window.addEventListener('keydown', (e)=>{
   }
 }, { passive:false });
 
-$('btnDescargar').addEventListener('click', (e)=>{ e.preventDefault(); resolverManiobra(); });
-$('btnDescargar').addEventListener('touchstart', (e)=>{ e.preventDefault(); resolverManiobra(); }, { passive:false });
+
 
 // ---------- Selector de ruta en el menú ----------
 (function poblarSelectorRutas(){

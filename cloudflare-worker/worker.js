@@ -32,6 +32,23 @@ export default {
       return new Response(JSON.stringify(top), { status: 200, headers: CORS_HEADERS });
     }
 
+    // Ruta: DELETE /api/leaderboard o POST /api/reset (Borrar puntajes — Protegido por clave de administrador)
+    if ((request.method === 'DELETE' && url.pathname === '/api/leaderboard') || (request.method === 'POST' && url.pathname === '/api/reset')) {
+      const secret = request.headers.get('X-Admin-Secret') || url.searchParams.get('admin_key');
+      const expectedSecret = (env && env.ADMIN_SECRET) || 'jmtoral_staytimes_admin_2026';
+      if (!secret || secret !== expectedSecret) {
+        return new Response(JSON.stringify({ error: 'No autorizado. Solo el administrador puede reiniciar los puntajes.' }), {
+          status: 403,
+          headers: CORS_HEADERS
+        });
+      }
+      await saveLeaderboard(env, []);
+      return new Response(JSON.stringify({ success: true, message: 'Leaderboard reiniciado por administrador' }), {
+        status: 200,
+        headers: CORS_HEADERS
+      });
+    }
+
     // Ruta: POST /api/score
     if (request.method === 'POST' && url.pathname === '/api/score') {
       try {
@@ -48,7 +65,7 @@ export default {
         const nuevaEntrada = {
           nombre: String(body.nombre).slice(0, 25).trim() || 'Anónimo',
           puntos: Math.max(0, Math.round(Number(body.puntos) || 0)),
-          npsPromedio: Math.min(100, Math.max(0, Number(body.npsPromedio))),
+          npsPromedio: Math.min(100, Math.max(-100, Number(body.npsPromedio))),
           costoTotal: Math.max(0, Math.round(Number(body.costoTotal) || 0)),
           estrellas: Math.min(5, Math.max(1, Math.round(Number(body.estrellas) || 1))),
           paradasEntregadas: Math.max(0, Math.round(Number(body.paradasEntregadas) || 0)),

@@ -23,9 +23,9 @@ Partida activa: 3–4 minutos.
 
 | Componente | Detalle |
 |---|---|
-| Entrega | `index.html` + `beverage-delivery-truck.obj` (2 archivos), sin build step |
+| Entrega | `index.html` + `beverage-delivery-truck.obj` + `caja-refrescos.obj` + 4 modelos de edificios OBJ (sin build step) |
 | 3D | Three.js r160 por CDN (`importmap` ES module) + OBJLoader |
-| Geometría | Camión: modelo OBJ (~6,312 tris), escena: procedural (~500 tris). Fallback procedural si OBJ no carga |
+| Geometría | Camión OBJ (~6,312 tris), Cajas OBJ (~40,344 tris), 4 Edificios OBJ (~76,000 tris combinados). Fallback procedural automático |
 | HUD | HTML/CSS glassmorphism superpuesto al canvas |
 | Tipografía | Google Fonts: Plus Jakarta Sans (400–800) |
 | Tema visual | Dark premium con backdrop-filter, glow accents, ACES Filmic tone mapping |
@@ -249,6 +249,11 @@ Todas las tareas descritas a continuación ya fueron codificadas e integradas en
 |---|---|
 | `index.html` | Todo el juego (HTML + CSS + JS + Three.js) |
 | `beverage-delivery-truck.obj` | Modelo 3D del camión (150 objetos, 6,312 tris, 7 materiales) |
+| `caja-refrescos.obj` | Modelo 3D de la caja de refrescos con botellas (40,344 tris, 6 materiales) |
+| `tiendita-de-barrio.obj` | Modelo 3D de Tiendita Tradicional 1 (4,236 tris, 9 materiales) |
+| `tiendita-de-barri2o.obj` | Modelo 3D de Tiendita Tradicional 2 rústica (8,952 tris, 16 materiales) |
+| `supermarket.obj` | Modelo 3D de Supermercado Moderno con estacionamiento (7,952 tris, 12 materiales) |
+| `restaurante-chino.obj` | Modelo 3D de Restaurante Oriental / Moderno (55,728 tris, 8 materiales) |
 | `SPEC.md` | Especificación original (pre-refactor) |
 | `CLAUDE.md` | Contexto para asistentes de código |
 | `README.md` | Readme del repo |
@@ -300,21 +305,41 @@ git reset --hard pre-refactor-jefe
 - **Bonus al Cierre**: Satisfacción NPS (`NPS% × 500`), Ahorro de tiempo (`100 pts/min`), Paradas completadas (`2,000 pts/parada`).
 - **Leaderboard**: Ahora ordena por Puntos Totales descendente como métrica primaria para desempatar y discriminar claramente entre jugadores.
 
-### ✅ 2. Calibración del NPS (Hacerlo bien SÍ sube el NPS) — COMPLETADO
-- Se calibró la expectativa del plan para que las paradas con acceso estrecho contemplen la dificultad estructural, permitiendo que la habilidad y rapidez del chofer sean premiadas con **90% – 100% NPS** en lugar de castigarlo injustamente.
-- Las maniobras verdes aportan ahorro neto de tiempo frente al estándar, reflejando de inmediato estados de satisfacción `😍 NPS 100% · Encantado` y `😊 NPS 92% · Muy satisfecho`.
+### ✅ 2. Calificación Individual de Clientes (1 a 10) y NPS Global Clásico — COMPLETADO
+- **Calificación por cliente (1 a 10) en cada parada**:
+  - **10 / 10** (Desviación ≤ 0 min): `😍 PROMOTOR (10/10 · Excelente)`
+  - **9 / 10** (Desviación ≤ 1.5 min): `😍 PROMOTOR (9/10 · Muy satisfecho)`
+  - **8 / 10** (Desviación ≤ 3.5 min): `😊 PASIVO (8/10 · Satisfecho)`
+  - **7 / 10** (Desviación ≤ 5.5 min): `🙂 PASIVO (7/10 · Aceptable)`
+  - **5 / 10** (Desviación ≤ 8.0 min): `😐 DETRACTOR (5/10 · Inconforme)`
+  - **3 / 10** (Desviación ≤ 11.0 min): `😠 DETRACTOR (3/10 · Molesto)`
+  - **1 / 10** (Desviación > 11.0 min): `🤬 DETRACTOR (1/10 · Pésimo)`
+  - **0 / 10** (Rechazo o No entregada): `🤬 DETRACTOR (0/10)`
+- **Fórmula de NPS Global Clásico**:
+  $$\text{NPS Global} = \% \text{Promotores (9-10)} - \% \text{Detractores (0-6)}$$
+  *(Escala de -100 a +100).*
+- **Penalización por Zona Roja**: Terminar después de las 15:00 resta `-2 pts de NPS` por cada minuto de tiempo extra.
+- **Estrellas basadas en NPS Global (-100 a +100)**:
+  - **≥ +75** $\to$ ★★★★★ (5 estrellas · Clase Mundial)
+  - **+50 a +74** $\to$ ★★★★☆ (4 estrellas · Excelente)
+  - **+20 a +49** $\to$ ★★★☆☆ (3 estrellas · Aceptable)
+  - **0 a +19** $\to$ ★★☆☆☆ (2 estrellas · En Riesgo)
+  - **< 0** (predominan detractores) $\to$ ★☆☆☆☆ (1 estrella · Crítico)
+- **Desglose en Resultados**: Muestra el desglose visual con promotores, pasivos, detractores y la fórmula de cálculo explícita.
 
-### ✅ 3. Estrellas Alineadas Directamente al NPS — COMPLETADO
-- Se reemplazó el cálculo de estrellas basado en costo por una escala directa según el NPS del turno:
-  - **≥ 90% NPS** → ★★★★★ (5 estrellas)
-  - **75% – 89% NPS** → ★★★★☆ (4 estrellas)
-  - **60% – 74% NPS** → ★★★☆☆ (3 estrellas)
-  - **40% – 59% NPS** → ★★☆☆☆ (2 estrellas)
-  - **< 40% NPS** o ruta truncada → ★☆☆☆☆ (1 estrella)
-
-### ✅ 4. Rediseño Look & Feel y Camión OBJ 3D — COMPLETADO
-- Modelo `beverage-delivery-truck.obj` cargado con 7 materiales realistas, rotación alineada (`rotation.y = 0`) para avanzar de frente.
-- Pantalla nítida y brillante durante la dinámica: `#minijuego` anclado abajo sin difuminar el 3D y con niebla Three.js optimizada.
+### ✅ 4. Rediseño Look & Feel, Camión OBJ, Cajas 3D y Edificios de Paradas — COMPLETADO
+- **Modelos 3D de Paradas**: Se reemplazó el cubo genérico por 4 modelos OBJ detallados y un CEDIS dedicado:
+  - **P1 (Abarrotes Doña Mari · Tradicional)**: `tiendita-de-barrio.obj` con toldo Coca-Cola, estanterías y botelleros.
+  - **P2 (Súper La Comercial · Moderno)**: `supermarket.obj` con estacionamiento marcado, corral de carritos y puertas de cristal.
+  - **P3 (Tienda El Ahorro · Tradicional)**: `tiendita-de-barri2o.obj` con lona azul, techos de zinc rústicos, bolsas de papas colgadas y letreros.
+  - **P4 (Minisúper San José · Tradicional)**: `tiendita-de-barrio.obj`.
+  - **P5 (Supermercado Del Valle / Restaurante · Moderno)**: `restaurante-chino.obj` con tejados orientales de jade verde, pilares de laca roja y ornatos dorados.
+  - **CEDIS**: Almacén y centro de distribución logístico con muelle de carga.
+- **Geocerca GPS Plana**: Se eliminaron los postes verticales y se rediseñó como una proyección circular plana con anillos concéntricos tipo radar a nivel de ras de suelo (`polygonOffset`), evitando cualquier colisión visual con el camión, las cajas o la banqueta.
+- **Skyline de Ciudad Distante (Cero Encimamientos)**: Los edificios de fondo se movieron al horizonte lejano (`Z = -11.0`) y a los flancos laterales, despejando por completo el lote central de descarga para que ningún edificio de fondo se encime o atraviese las paradas 3D.
+- **Aguja y Minijuego Estilizados**: Aguja láser con punteros de diamante en top/bottom y brillo neon cian, pista en cápsula redondeada (`border-radius: 999px`) y línea de diana central para tiros perfectos.
+- **Leaderboard Protegido**: No hay botones públicos de borrado. El reinicio de la base de datos en Cloudflare Worker está protegido por token de autenticación (`X-Admin-Secret`) y solo se ejecuta bajo tu solicitud explícita.
+- **Camión y Cajas 3D**: `beverage-delivery-truck.obj` y `caja-refrescos.obj` con materiales PBR y posicionamiento sobre la banqueta sin colisiones.
 
 ---
 

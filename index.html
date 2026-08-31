@@ -686,7 +686,8 @@ const CONFIG = {
     rojo: 100,              // Zona roja
     bonusNpsFactor: 250,    // (NPS + 100) * 250 -> hasta 50,000 pts con NPS +100
     bonusMinutoAhorro: 100, // Pts por cada minuto ahorrado antes de las 15:00
-    bonusParadaOk: 2000     // Pts por parada entregada a tiempo
+    bonusParadaOk: 2000,    // Pts por parada entregada a tiempo
+    factorPenalizacionCosto: 5 // Cada $1 de costo total resta 5 pts del puntaje final
   },
 
   leaderboard: {
@@ -2047,7 +2048,7 @@ function estadoResultados(){
   const minutosAhorro = Math.max(0, CONFIG.jornada.corteDuroMin - sim.cierre);
   const bonusTiempo = minutosAhorro * CONFIG.puntos.bonusMinutoAhorro;
   const bonusEntregas = entregadas * CONFIG.puntos.bonusParadaOk;
-  const penalizacionCostos = Math.round((costos.sobrecostos || 0) * 5);
+  const penalizacionCostos = Math.round(costos.total * (CONFIG.puntos.factorPenalizacionCosto || 5));
   const puntosTotal = Math.max(0, (G.puntosManiobras || 0) + bonusNps + bonusTiempo + bonusEntregas - penalizacionCostos);
 
   // Desglose Stay Time
@@ -2154,7 +2155,7 @@ function estadoResultados(){
         <div class="kv"><span class="muted">NPS Global (${npsFormatted})</span><b>+${bonusNps.toLocaleString()} pts</b></div>
         <div class="kv"><span class="muted">Eficiencia Horaria (${Math.round(minutosAhorro)} min de holgura)</span><b>+${bonusTiempo.toLocaleString()} pts</b></div>
         <div class="kv"><span class="muted">Paradas Entregadas (${entregadas})</span><b>+${bonusEntregas.toLocaleString()} pts</b></div>
-        ${penalizacionCostos > 0 ? `<div class="kv" style="color:var(--bad)"><span>Penalizaciones por costos</span><b>-${penalizacionCostos.toLocaleString()} pts</b></div>` : ''}
+        ${penalizacionCostos > 0 ? `<div class="kv" style="color:var(--bad)"><span>Penalización por Costo ($${Math.round(costos.total).toLocaleString()})</span><b>-${penalizacionCostos.toLocaleString()} pts</b></div>` : ''}
         <hr style="border-color:var(--line);margin:8px 0">
         <div class="kv"><span style="font-weight:700">PUNTAJE FINAL</span><b style="font-size:18px;color:#f59e0b">${puntosTotal.toLocaleString()} PTS</b></div>
       </div>

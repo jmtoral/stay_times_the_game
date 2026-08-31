@@ -646,7 +646,8 @@ const CONFIG = {
   ventana: { gestionRechazoMin: 8 },
 
   costos: {
-    costoMinutoExtra: 4.5,
+    costoMinutoOperativo: 3.0,     // Costo operativo estándar por minuto de jornada (combustible, tripulación, activo)
+    costoMinutoExtra: 4.5,         // Sobrecosto por minuto fuera de jornada (>15:00)
     costoRechazo: 850,
     costoCajaNoEntregada: 12
   },
@@ -994,11 +995,13 @@ function calcularCostos(camion, sim){
       if (p.rechazo) rechazos++;
     }
   });
+  const cOperativo = sim.total * (C.costoMinutoOperativo || 3.0);
   const extra = sim.tiempoExtra * C.costoMinutoExtra;
   const cRechazo = rechazos * C.costoRechazo;
   const cCajas = cajasPerdidas * C.costoCajaNoEntregada;
-  const total = extra + cRechazo + cCajas;
-  return { extra, cRechazo, cCajas, total, rechazos, cajasPerdidas };
+  const total = cOperativo + extra + cRechazo + cCajas;
+  const sobrecostos = extra + cRechazo + cCajas;
+  return { cOperativo, extra, cRechazo, cCajas, total, sobrecostos, rechazos, cajasPerdidas };
 }
 
 // Las estrellas corresponden directamente al NPS Global (-100 a +100)
@@ -2044,7 +2047,7 @@ function estadoResultados(){
   const minutosAhorro = Math.max(0, CONFIG.jornada.corteDuroMin - sim.cierre);
   const bonusTiempo = minutosAhorro * CONFIG.puntos.bonusMinutoAhorro;
   const bonusEntregas = entregadas * CONFIG.puntos.bonusParadaOk;
-  const penalizacionCostos = Math.round(costos.total * 5);
+  const penalizacionCostos = Math.round((costos.sobrecostos || 0) * 5);
   const puntosTotal = Math.max(0, (G.puntosManiobras || 0) + bonusNps + bonusTiempo + bonusEntregas - penalizacionCostos);
 
   // Desglose Stay Time
@@ -2230,11 +2233,12 @@ function renderStack(items){
 }
 function renderCostos(c){
   const filas = [
-    ['Tiempo extra', c.extra],
-    ['Rechazos ('+c.rechazos+')', c.cRechazo],
+    ['Operación base de ruta ('+Math.round(c.cOperativo/(CONFIG.costos.costoMinutoOperativo||3))+' min)', c.cOperativo],
+    ['Tiempo extra (>15:00)', c.extra],
+    ['Rechazos de cliente ('+c.rechazos+')', c.cRechazo],
     ['Cajas no entregadas ('+c.cajasPerdidas+')', c.cCajas]
-  ].map(([n,v])=>`<div class="kv"><span class="muted">${n}</span><b>$${v.toFixed(0)}</b></div>`).join('');
-  return filas + `<hr style="border-color:var(--line);margin:8px 0"><div class="kv"><span><b>TOTAL</b></span><b style="font-size:20px;color:${c.total>0?'var(--bad)':'var(--ok)'}">$${c.total.toFixed(0)}</b></div>`;
+  ].map(([n,v])=>`<div class="kv"><span class="muted">${n}</span><b>$${Math.round(v).toLocaleString()}</b></div>`).join('');
+  return filas + `<hr style="border-color:var(--line);margin:8px 0"><div class="kv"><span><b>COSTO TOTAL DEL TURNO</b></span><b style="font-size:20px;color:${c.sobrecostos>0?'var(--bad)':'var(--ok)'}">$${Math.round(c.total).toLocaleString()}</b></div>`;
 }
 
 function generarConsejo(sim, agg, costos){

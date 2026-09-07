@@ -21,49 +21,71 @@
 </script>
 
 <style>
-  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes slideDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:translateY(0)} }
-  @keyframes pulseGlow { 0%,100%{box-shadow:0 0 20px rgba(255,0,0,.15)} 50%{box-shadow:0 0 40px rgba(255,0,0,.35)} }
-  @keyframes needleGlow { 0%,100%{ filter: drop-shadow(0 0 6px rgba(56,189,248,.8)) drop-shadow(0 0 16px rgba(255,255,255,.9)); } 50%{ filter: drop-shadow(0 0 12px rgba(56,189,248,1)) drop-shadow(0 0 26px rgba(255,255,255,1)); } }
-  @keyframes toastIn { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
-  @keyframes npsReveal { from{opacity:0;transform:scale(.6)} to{opacity:1;transform:scale(1)} }
-  @keyframes starPop { 0%{transform:scale(0)} 60%{transform:scale(1.3)} 100%{transform:scale(1)} }
+  /* =====================================================================
+     NEOBRUTALISMO — rojo / negro sobre fondo claro.
+     Reglas del sistema:
+       · Bordes duros negros (var(--bw)) en todo lo que sea superficie.
+       · Sombra sólida sin blur (offset puro), nunca blur/glass/gradientes.
+       · Colores planos y saturados. Tipografía pesada, títulos en mayúsculas.
+       · Interacción = desplazamiento físico (la pieza "se hunde" al pulsar).
+     ===================================================================== */
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes slideDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes toastIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+  @keyframes npsReveal { from{opacity:0;transform:translate(-50%,-50%) scale(.7)} to{opacity:1;transform:translate(-50%,-50%) scale(1)} }
+  @keyframes starPop { 0%{transform:scale(0)} 60%{transform:scale(1.25)} 100%{transform:scale(1)} }
   @keyframes barGrow { from{width:0} }
-  @keyframes countUp { from{opacity:.3} to{opacity:1} }
+  @keyframes needleBlink { 0%,100%{ opacity:1 } 50%{ opacity:.65 } }
 
   :root{
-    /* Paleta Coca-Cola premium */
-    --red-50:#ffe5e5; --red-100:#ffcccc; --red-200:#ff9999; --red-300:#ff6666;
-    --red-400:#ff3333; --red-500:#ff0000; --red-600:#cc0000; --red-700:#990000;
-    --red-800:#660000; --red-900:#330000; --red-950:#1a0000;
+    /* --- Tinta y papel --- */
+    --ink:#101010;              /* negro estructural: bordes, texto, sombras */
+    --ink-2:#4a4340;            /* texto secundario */
+    --muted:#726a66;            /* texto terciario */
+    --paper:#f4efe6;            /* fondo claro de pantalla */
+    --paper-2:#ffffff;          /* superficie de tarjeta */
+    --paper-3:#eae2d4;          /* superficie alterna / filas */
 
-    /* Dark premium theme */
-    --bg:#0f0a0a; --bg-elevated:#1a1212; --bg-surface:#241a1a;
-    --panel:rgba(36,26,26,.85); --panel-solid:#241a1a; --panel2:rgba(42,30,30,.9);
-    --line:rgba(255,255,255,.08); --line-accent:rgba(204,0,0,.3);
-    --txt:#f5eded; --txt-secondary:#c4a8a8; --muted:#8a6a6a; --accent:var(--red-600);
-    --accent-glow:rgba(204,0,0,.25);
+    /* --- Rojo de marca --- */
+    --red:#e01b24;
+    --red-dark:#9e1017;
+    --red-light:#ff4d4d;
+    --red-tint:#ffe0e0;
 
-    --c-traslado:#e8a020; --c-stay:#14b8a6; --c-retorno:#a855f7;
-    --c-extra:#ef4444; --c-cedis:rgba(180,140,140,.6);
-    --verde:#22c55e; --amarillo:#eab308; --rojo:#ef4444;
-    --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444;
+    /* --- Amarillo de acento (puntaje, medallas) --- */
+    --gold:#8a6100;             /* texto sobre claro */
+    --gold-bg:#ffd400;          /* relleno */
 
-    /* Glass effect */
-    --glass-bg:rgba(26,18,18,.72); --glass-border:rgba(255,255,255,.06);
-    --glass-blur:20px;
+    /* --- Semánticos con contraste sobre papel --- */
+    --ok:#127a3c; --warn:#a35a00; --bad:#c4141c;
+    --ok-bg:#c8f5d8; --warn-bg:#ffe8b8; --bad-bg:#ffdcdc;
 
-    /* Typography */
+    /* --- Bloques de la barra de jornada / stacks --- */
+    --c-cedis:#a89f96; --c-traslado:#f59e0b; --c-stay:#0d9488;
+    --c-retorno:#7c3aed; --c-extra:var(--red);
+    --verde:#16a34a; --amarillo:#facc15; --rojo:var(--red);
+
+    /* --- Alias que sigue usando el JS --- */
+    --txt:var(--ink); --txt-secondary:var(--ink-2);
+    --line:var(--ink); --accent:var(--red);
+
+    /* --- Geometría neobrutalista --- */
+    --bw:3px;                   /* grosor de borde estándar */
+    --bw-thick:4px;
+    --radius:10px; --radius-lg:14px; --radius-sm:6px;
+    --shadow:6px 6px 0 var(--ink);
+    --shadow-sm:4px 4px 0 var(--ink);
+    --shadow-lg:9px 9px 0 var(--ink);
+    --shadow-red:6px 6px 0 var(--red);
+
     --font:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --mono:'SF Mono',Monaco,'Cascadia Code',Consolas,monospace;
-
-    /* Spacing */
-    --radius:14px; --radius-lg:20px; --radius-sm:8px;
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body{ margin:0; height:100%; background:var(--bg); color:var(--txt);
+  html,body{ margin:0; height:100%; background:var(--paper); color:var(--ink);
     font-family:var(--font); font-weight:500;
     overflow:hidden; touch-action:manipulation; }
   #canvas3d{ position:fixed; inset:0; width:100%; height:100%; display:block; z-index:0; }
@@ -74,352 +96,396 @@
   .screen.on{ display:flex; }
   .interactivo{ pointer-events:auto; }
 
-  h1,h2,h3{ margin:0 0 .4em; font-weight:800; letter-spacing:-.02em; }
+  h1,h2,h3{ margin:0 0 .4em; font-weight:800; letter-spacing:-.02em; color:var(--ink); }
+  h2,h3{ text-transform:uppercase; letter-spacing:.01em; }
   .muted{ color:var(--muted); }
-  .txt-secondary{ color:var(--txt-secondary); }
+  .txt-secondary{ color:var(--ink-2); }
+  .sub{ font-size:12px; color:var(--muted); }
 
+  /* Fondo de papel con retícula: da textura sin recurrir a degradados. */
+  .paper-grid{
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(rgba(16,16,16,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,16,16,.05) 1px, transparent 1px);
+    background-size:26px 26px;
+  }
+
+  /* ---------- SUPERFICIES ---------- */
   .card{
-    background:var(--glass-bg);
-    backdrop-filter:blur(var(--glass-blur));
-    -webkit-backdrop-filter:blur(var(--glass-blur));
-    border:1px solid var(--glass-border);
+    background:var(--paper-2);
+    border:var(--bw) solid var(--ink);
     border-radius:var(--radius);
-    padding:20px;
-    transition:border-color .3s, box-shadow .3s;
+    box-shadow:var(--shadow);
+    padding:18px;
   }
-  .card:hover{ border-color:rgba(255,255,255,.1); }
   .card-accent{
-    border-color:var(--line-accent);
-    box-shadow:0 0 30px var(--accent-glow), inset 0 0 30px rgba(204,0,0,.05);
+    border-color:var(--ink);
+    box-shadow:var(--shadow-red);
   }
 
+  /* ---------- BOTONES ---------- */
   button{
-    font:inherit; font-weight:600; color:var(--txt);
-    background:var(--panel2);
-    border:1px solid var(--glass-border);
+    font:inherit; font-weight:800; color:var(--ink);
+    background:var(--paper-2);
+    border:var(--bw) solid var(--ink);
     border-radius:var(--radius-sm);
     padding:12px 20px;
     cursor:pointer; min-height:48px;
-    transition:all .2s ease;
+    text-transform:uppercase; letter-spacing:.05em;
+    box-shadow:var(--shadow-sm);
+    transition:transform .08s ease, box-shadow .08s ease, background .15s ease;
   }
-  button:hover{ background:rgba(60,40,40,.9); border-color:rgba(255,255,255,.12);
-    transform:translateY(-1px); box-shadow:0 4px 16px rgba(0,0,0,.3); }
-  button:active{ transform:translateY(0); }
-  button.primary{
-    background:linear-gradient(135deg, var(--red-600), var(--red-700));
-    color:#fff; border-color:var(--red-700); font-weight:700;
-    box-shadow:0 4px 20px rgba(204,0,0,.3);
+  button:hover{ transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink); }
+  button:active{ transform:translate(4px,4px); box-shadow:0 0 0 var(--ink); }
+  button:focus-visible{ outline:var(--bw) solid var(--red); outline-offset:3px; }
+  button.primary{ background:var(--red); color:#fff; }
+  button.primary:hover{ background:var(--red-light); }
+
+  /* ---------- CAMPOS ---------- */
+  input, select{
+    font:inherit; font-weight:700; color:var(--ink);
+    background:var(--paper-2);
+    border:var(--bw) solid var(--ink);
+    border-radius:var(--radius-sm);
+    padding:10px 14px; min-height:46px;
+    box-shadow:var(--shadow-sm);
   }
-  button.primary:hover{
-    background:linear-gradient(135deg, var(--red-500), var(--red-600));
-    box-shadow:0 6px 28px rgba(204,0,0,.45);
-    transform:translateY(-2px);
+  input:focus, select:focus{
+    outline:none; background:#fffbe8;
+    box-shadow:var(--shadow-sm), inset 0 0 0 2px var(--red);
   }
 
-  table{ border-collapse:collapse; width:100%; font-size:13px; }
-  th,td{ border:1px solid var(--line); padding:8px 10px; text-align:right; }
+  /* ---------- TABLAS ---------- */
+  table{ border-collapse:collapse; width:100%; font-size:13px; background:var(--paper-2); }
+  th,td{ border:2px solid var(--ink); padding:8px 10px; text-align:right; }
   th:first-child,td:first-child{ text-align:left; }
-  th{ background:rgba(255,255,255,.03); color:var(--muted); font-weight:600; font-size:11px;
-    text-transform:uppercase; letter-spacing:.05em; }
+  th{ background:var(--ink); color:var(--paper); font-weight:800; font-size:11px;
+    text-transform:uppercase; letter-spacing:.06em; }
+  tbody tr:nth-child(even){ background:var(--paper-3); }
   .scroll{ overflow:auto; -webkit-overflow-scrolling:touch; }
+
+  .kv{ display:flex; justify-content:space-between; gap:8px; margin:5px 0; }
+  .kv b{ font-variant-numeric:tabular-nums; }
+  .pos{ color:var(--ok); } .neg{ color:var(--bad); } .zero{ color:var(--muted); }
+
+  /* Etiqueta rectangular con borde duro: el "chip" del sistema. */
+  .chip{
+    background:var(--paper-2); border:2px solid var(--ink);
+    border-radius:var(--radius-sm); padding:6px 12px;
+    font-size:12px; font-weight:700; color:var(--ink);
+    box-shadow:3px 3px 0 var(--ink);
+  }
+  .subtitle-tag{
+    display:inline-block; font-size:11px; font-weight:800; color:#fff;
+    background:var(--ink); border-radius:var(--radius-sm);
+    padding:5px 12px; letter-spacing:.08em; text-transform:uppercase;
+  }
 
   /* ---------- MENU ---------- */
   #menu{
-    align-items:center; justify-content:center; text-align:center; padding:24px;
-    background:radial-gradient(ellipse 900px 500px at 50% 30%, rgba(204,0,0,.12) 0%, transparent 70%),
-               radial-gradient(ellipse 600px 400px at 50% 80%, rgba(204,0,0,.06) 0%, transparent 60%);
-    overflow:auto;
+    flex-direction:row; align-items:flex-start; justify-content:center;
+    padding:20px; overflow:auto;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(rgba(16,16,16,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,16,16,.05) 1px, transparent 1px);
+    background-size:26px 26px;
   }
-  #menu .card{
-    max-width:520px; width:100%;
-    animation:fadeIn .6s ease-out;
+  .menu-wrap{
+    margin:auto; width:100%; max-width:1060px;
+    display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+    gap:18px; align-items:start;
+    animation:fadeIn .4s ease-out;
   }
+  @media(max-width:900px){ .menu-wrap{ grid-template-columns:1fr; max-width:560px; } }
+
+  .menu-main{ text-align:left; }
   #menu h1{
-    font-size:36px; font-weight:800;
-    background:linear-gradient(135deg, #fff 30%, var(--red-300));
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    background-clip:text;
+    font-size:44px; font-weight:800; line-height:.95; margin:0;
+    text-transform:uppercase; letter-spacing:-.03em;
+    color:var(--ink);
   }
-  .coca-logo{ height:44px; margin-bottom:12px; display:block; margin-left:auto; margin-right:auto;
-    filter:brightness(1.1); }
-  .coca-logo-sm{ height:26px; vertical-align:middle; filter:brightness(1.1); }
+  #menu h1 em{ font-style:normal; color:var(--red); }
+  .brand-row{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding-bottom:12px; margin-bottom:12px;
+    border-bottom:var(--bw) solid var(--ink);
+  }
+  .coca-logo{ height:38px; display:block; }
+  .coca-logo-sm{ height:24px; vertical-align:middle; }
 
-  .obj{
-    text-align:left; margin:16px 0; color:var(--txt-secondary); font-size:13px; line-height:1.65;
-    background:rgba(255,255,255,.03); border-radius:var(--radius-sm); padding:14px 16px;
-    border:1px solid var(--line);
+  /* Lista de objetivos: numerador rojo en bloque, sin viñetas. */
+  .obj{ margin:14px 0; color:var(--ink-2); font-size:13px; line-height:1.5; }
+  .obj-title{
+    font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink); margin-bottom:8px;
+  }
+  .obj ol{ margin:0; padding:0; list-style:none; counter-reset:objn; }
+  .obj li{
+    counter-increment:objn; position:relative;
+    padding:8px 10px 8px 40px; margin-bottom:6px;
+    background:var(--paper-3); border:2px solid var(--ink); border-radius:var(--radius-sm);
+    color:var(--ink);
+  }
+  .obj li::before{
+    content:counter(objn);
+    position:absolute; left:8px; top:50%; transform:translateY(-50%);
+    width:22px; height:22px; border-radius:4px;
+    background:var(--red); color:#fff;
+    font-size:12px; font-weight:800;
+    display:flex; align-items:center; justify-content:center;
   }
 
-  #nombreInput{
-    font:inherit; font-weight:600; color:var(--txt); background:var(--bg-surface);
-    border:1px solid var(--line); border-radius:var(--radius-sm); padding:10px 14px;
-    min-height:44px; width:200px; text-align:center;
-    transition:border-color .2s, box-shadow .2s;
+  .form-row{ display:flex; gap:10px; align-items:center; margin-bottom:10px; flex-wrap:wrap; }
+  .form-row label{
+    font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink); min-width:56px;
   }
-  #nombreInput:focus{
-    outline:none; border-color:var(--accent);
-    box-shadow:0 0 0 3px var(--accent-glow);
-  }
-
-  .subtitle-tag{
-    display:inline-block; font-size:12px; font-weight:600; color:var(--txt-secondary);
-    background:rgba(255,255,255,.05); border:1px solid var(--line);
-    border-radius:999px; padding:4px 14px; letter-spacing:.03em;
-  }
+  #nombreInput{ flex:1; min-width:180px; }
+  #selRuta{ flex:1; min-width:180px; }
+  #btnEmpezar{ width:100%; margin-top:6px; font-size:16px; min-height:56px; }
 
   /* ---------- BRIEFING ---------- */
-  #briefing{ padding:20px; overflow:auto;
-    background:radial-gradient(ellipse 800px 400px at 50% 10%, rgba(204,0,0,.08) 0%, transparent 60%); }
-  #briefing .card{ animation:slideUp .5s ease-out both; }
-  #briefing .card:nth-child(2){ animation-delay:.1s; }
-  #briefing .card:nth-child(3){ animation-delay:.2s; }
-  .infoRuta{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
-  .chip{
-    background:rgba(255,255,255,.05); border:1px solid var(--line);
-    border-radius:999px; padding:6px 14px; font-size:12px; font-weight:500;
-    color:var(--txt-secondary);
-    transition:border-color .2s;
+  #briefing{
+    padding:20px; overflow:auto;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(rgba(16,16,16,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,16,16,.05) 1px, transparent 1px);
+    background-size:26px 26px;
   }
-  .chip:hover{ border-color:rgba(255,255,255,.15); }
+  /* #briefing y #resultados son flex-column con scroll: flex-shrink:0 evita que
+     las tarjetas se compriman cuando el contenido excede el alto de la pantalla. */
+  #briefing > *{ max-width:900px; width:100%; margin-left:auto; margin-right:auto; flex-shrink:0; }
+  .infoRuta{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
   .warnTxt{ color:var(--warn); }
 
-  /* ---------- HUD juego ---------- */
+  /* ---------- HUD DEL JUEGO (flota sobre la escena 3D) ---------- */
   #hud{ pointer-events:none; background:none; }
   #barraTop{
-    position:absolute; top:0; left:0; right:0; padding:12px 16px;
-    background:linear-gradient(to bottom, rgba(15,10,10,.9) 0%, rgba(15,10,10,.5) 70%, transparent 100%);
+    position:absolute; top:0; left:0; right:0; padding:10px 16px 12px;
+    background:var(--paper);
+    border-bottom:var(--bw-thick) solid var(--ink);
+    box-shadow:0 4px 0 rgba(16,16,16,.25);
     pointer-events:auto;
   }
   .relojFila{ display:flex; align-items:baseline; gap:12px; margin-bottom:8px; }
   #horaDia{
-    font-size:32px; font-weight:800; font-variant-numeric:tabular-nums;
-    font-family:var(--mono);
-    letter-spacing:.02em;
+    font-size:30px; font-weight:800; font-variant-numeric:tabular-nums;
+    font-family:var(--mono); letter-spacing:.02em; color:var(--ink);
   }
-  #estadoReloj{ font-size:12px; color:var(--muted); font-weight:500; }
+  #estadoReloj{ font-size:12px; color:var(--ink-2); font-weight:700; }
+
+  #hudScoreBadge{
+    display:flex; align-items:center; gap:8px;
+    background:var(--gold-bg); color:var(--ink);
+    border:2px solid var(--ink); border-radius:var(--radius-sm);
+    box-shadow:3px 3px 0 var(--ink);
+    padding:5px 12px; font-size:13px; font-weight:800;
+  }
+  #comboBadge{
+    display:none; background:var(--red); color:#fff;
+    border:2px solid var(--ink); border-radius:4px;
+    padding:2px 7px; font-size:10px; font-weight:800; letter-spacing:.03em;
+  }
 
   #jornadaBar{
-    position:relative; height:24px;
-    background:rgba(255,255,255,.05);
-    border:1px solid var(--line); border-radius:var(--radius-sm);
+    position:relative; height:22px;
+    background:var(--paper-3);
+    border:var(--bw) solid var(--ink); border-radius:var(--radius-sm);
     overflow:hidden; display:flex;
   }
-  #jornadaBar .seg{ height:100%; transition:width .3s ease; }
-  #linea15{
-    position:absolute; top:-3px; bottom:-3px; width:2px;
-    background:rgba(255,255,255,.5);
-    box-shadow:0 0 6px rgba(255,255,255,.3);
-  }
-  #linea15 .lbl{
-    position:absolute; top:-16px; left:-14px; font-size:9px;
-    color:rgba(255,255,255,.6); font-weight:600;
-  }
+  #jornadaBar .seg{ height:100%; transition:width .3s ease; border-right:1px solid rgba(16,16,16,.25); }
+  #linea15{ position:absolute; top:-4px; bottom:-4px; width:3px; background:var(--ink); z-index:3; }
+  #linea15 .lbl{ position:absolute; top:-15px; left:-14px; font-size:9px; color:var(--ink); font-weight:800; }
   #marcaAhora{
-    position:absolute; top:-4px; bottom:-4px; width:3px;
-    background:var(--accent);
-    box-shadow:0 0 8px var(--accent), 0 0 16px rgba(204,0,0,.3);
-    border-radius:2px;
-    transition:left .3s ease;
+    position:absolute; top:-5px; bottom:-5px; width:4px;
+    background:var(--red); border:1px solid var(--ink); border-radius:2px;
+    z-index:4; transition:left .3s ease;
   }
-  .leyenda{ display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; font-size:10px; color:var(--muted);
-    font-weight:500; }
+  .leyenda{ display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; font-size:10px;
+    color:var(--ink-2); font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
   .leyenda i{
-    display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:4px;
-    vertical-align:middle;
+    display:inline-block; width:11px; height:11px; border:1.5px solid var(--ink);
+    border-radius:2px; margin-right:5px; vertical-align:middle;
   }
 
   #panelParada{
-    position:absolute; top:104px; left:14px; width:min(320px,56vw);
-    background:var(--glass-bg);
-    backdrop-filter:blur(var(--glass-blur));
-    -webkit-backdrop-filter:blur(var(--glass-blur));
-    box-shadow:0 8px 32px rgba(0,0,0,.4);
-    border:1px solid var(--glass-border);
-    border-radius:var(--radius);
+    position:absolute; top:112px; left:14px; width:min(320px,56vw);
+    background:var(--paper-2);
+    border:var(--bw) solid var(--ink); border-radius:var(--radius);
+    box-shadow:var(--shadow);
     padding:14px 16px; font-size:13px;
-    animation:slideDown .4s ease-out;
+    animation:slideDown .3s ease-out;
     pointer-events:auto;
   }
-  #panelParada h3{ font-size:14px; font-weight:700; }
-  .kv{ display:flex; justify-content:space-between; gap:8px; margin:4px 0; }
-  .kv b{ font-variant-numeric:tabular-nums; }
-  #etqDificultad{ margin-top:8px; font-size:11px; color:var(--warn); min-height:14px; font-weight:500; }
+  #panelParada h3{ font-size:13px; font-weight:800; }
+  #panelParada hr{ border:none; border-top:2px solid var(--ink); margin:8px 0; }
+  #etqDificultad{ margin-top:8px; font-size:11px; color:var(--warn); min-height:14px; font-weight:700; }
+  #npsVivo{ margin-top:8px; font-size:15px; text-align:center; min-height:28px; font-weight:700; line-height:1.4; }
 
-  /* NPS en vivo en el panel */
-  #npsVivo{
-    margin-top:8px; font-size:15px; text-align:center; min-height:28px;
-    font-weight:600; line-height:1.4;
+  .badge-promotor,.badge-pasivo,.badge-detractor{
+    display:inline-block; border:2px solid var(--ink); border-radius:4px;
+    padding:1px 7px; font-size:10px; font-weight:800; color:var(--ink);
   }
-  .badge-promotor{ background:rgba(34,197,94,.18); color:#22c55e; border:1px solid rgba(34,197,94,.4); border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; display:inline-block; }
-  .badge-pasivo{ background:rgba(234,179,8,.18); color:#eab308; border:1px solid rgba(234,179,8,.4); border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; display:inline-block; }
-  .badge-detractor{ background:rgba(239,68,68,.18); color:#ef4444; border:1px solid rgba(239,68,68,.4); border-radius:999px; padding:2px 8px; font-size:10px; font-weight:700; display:inline-block; }
+  .badge-promotor{ background:var(--ok-bg); }
+  .badge-pasivo{ background:var(--warn-bg); }
+  .badge-detractor{ background:var(--bad-bg); }
 
-  /* toasts / avisos */
-  #avisos{ position:absolute; top:104px; right:14px; width:min(300px,52vw);
+  /* ---------- TOASTS ---------- */
+  #avisos{ position:absolute; top:112px; right:14px; width:min(300px,52vw);
     display:flex; flex-direction:column; gap:8px; align-items:flex-end; }
   .toast{
-    background:var(--glass-bg);
-    backdrop-filter:blur(var(--glass-blur));
-    box-shadow:0 4px 20px rgba(0,0,0,.4);
-    border:1px solid var(--glass-border);
-    border-radius:var(--radius-sm);
-    padding:10px 14px; font-size:12px; color:var(--txt);
+    background:var(--paper-2); color:var(--ink);
+    border:var(--bw) solid var(--ink); border-radius:var(--radius-sm);
+    box-shadow:var(--shadow-sm);
+    padding:10px 13px; font-size:12px; font-weight:600;
     max-width:100%;
-    animation:toastIn .4s ease-out;
+    animation:toastIn .3s ease-out;
     transition:opacity .5s;
     pointer-events:auto;
   }
-  .toast.bad{ border-color:rgba(239,68,68,.4); background:rgba(60,15,15,.85); color:#fca5a5; }
-  .toast.ok{ border-color:rgba(34,197,94,.4); background:rgba(15,40,20,.85); color:#86efac; }
+  .toast.bad{ background:var(--bad-bg); }
+  .toast.ok{ background:var(--ok-bg); }
 
-  /* resumen desviación — NPS emoji reveal */
+  /* ---------- RESUMEN DE SALIDA DE PARADA ---------- */
   #resumenDesv{
     position:absolute; left:50%; top:38%; transform:translate(-50%,-50%);
-    background:var(--glass-bg);
-    backdrop-filter:blur(24px);
-    box-shadow:0 12px 48px rgba(0,0,0,.5), 0 0 40px var(--accent-glow);
-    border:1px solid var(--line-accent);
-    border-radius:var(--radius-lg);
-    padding:24px 28px; text-align:center;
-    display:none;
-    pointer-events:auto;
+    background:var(--paper-2);
+    border:var(--bw-thick) solid var(--ink); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg);
+    padding:22px 26px; text-align:center;
+    display:none; pointer-events:auto;
   }
-  #resumenDesv.on{ display:block; animation:npsReveal .4s ease-out; }
-  #resumenDesv .big{ font-size:22px; font-weight:800; }
-  .nps-emoji{ font-size:56px; line-height:1; }
-  .nps-label{ font-size:15px; font-weight:700; margin-top:6px; }
+  #resumenDesv.on{ display:block; animation:npsReveal .3s ease-out; }
+  #resumenDesv .big{ font-size:20px; font-weight:800; }
+  .nps-emoji{ font-size:54px; line-height:1; }
+  .nps-label{ font-size:15px; font-weight:800; margin-top:6px; text-transform:uppercase; }
 
-  /* ---------- MINIJUEGO (anclado abajo, sin tapar el 3D ni empañar la pantalla) ---------- */
+  /* ---------- MINIJUEGO ---------- */
   #minijuego{
-    position:absolute; left:0; right:0; bottom:0; top:auto;
-    height:auto;
-    padding:14px 18px calc(14px + env(safe-area-inset-bottom));
-    background:linear-gradient(to top, rgba(15,10,10,.95) 0%, rgba(15,10,10,.8) 70%, transparent 100%);
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
+    position:absolute; left:0; right:0; bottom:0; top:auto; height:auto;
+    padding:12px 18px calc(12px + env(safe-area-inset-bottom));
+    background:var(--paper);
+    border-top:var(--bw-thick) solid var(--ink);
     pointer-events:none;
     z-index:20;
   }
   #minijuego > *{ pointer-events:auto; }
   #mjInfo{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
-  #mjContador{ font-size:16px; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.8); }
-  #mjZonaTxt{ font-size:12px; color:var(--txt-secondary); font-weight:500; text-shadow:0 2px 8px rgba(0,0,0,.8); }
+  #mjContador{ font-size:14px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+  #mjZonaTxt{ font-size:12px; color:var(--ink-2); font-weight:700; }
 
   #mjBarra{
-    position:relative; height:46px;
-    border-radius:999px;
-    background:rgba(0,0,0,.65);
-    border:1.5px solid rgba(255,255,255,.22);
-    box-shadow:0 8px 32px rgba(0,0,0,.7), inset 0 2px 6px rgba(0,0,0,.7), 0 0 24px rgba(0,0,0,.5);
+    position:relative; height:42px;
+    border:var(--bw) solid var(--ink); border-radius:var(--radius-sm);
+    background:var(--ink);
+    box-shadow:var(--shadow-sm);
     overflow:visible;
-    padding:4px;
+    padding:3px;
   }
   #mjTrack{
     width:100%; height:100%;
-    border-radius:999px;
-    overflow:hidden;
-    position:relative;
-    box-shadow:inset 0 2px 8px rgba(0,0,0,.5);
+    border-radius:3px;
+    overflow:hidden; position:relative;
   }
   #mjBullseyeLine{
-    position:absolute; left:50%; top:0; bottom:0; width:2px;
-    background:rgba(255,255,255,.85);
-    box-shadow:0 0 8px rgba(255,255,255,.9);
+    position:absolute; left:50%; top:0; bottom:0; width:3px;
+    background:var(--ink);
     transform:translateX(-50%);
-    z-index:2;
-    pointer-events:none;
+    z-index:2; pointer-events:none;
   }
+  /* Aguja: negra con halo blanco duro para leerse sobre verde/amarillo/rojo. */
   #mjAguja{
-    position:absolute; top:-8px; bottom:-8px; width:4px;
-    background:linear-gradient(to bottom, #ffffff 0%, #bae6fd 40%, #ffffff 60%, #38bdf8 100%);
-    box-shadow:0 0 10px #ffffff, 0 0 20px #38bdf8, 0 0 35px rgba(56,189,248,.8);
+    position:absolute; top:-7px; bottom:-7px; width:6px;
+    background:var(--ink);
+    box-shadow:0 0 0 2px #fff;
     border-radius:2px;
     transform:translateX(-50%);
-    z-index:10;
-    pointer-events:none;
-    animation:needleGlow 1.2s ease-in-out infinite;
+    z-index:10; pointer-events:none;
+    animation:needleBlink 1s steps(2,end) infinite;
   }
   #mjAguja::before{
-    content:''; position:absolute; top:-6px; left:50%; width:12px; height:12px;
-    background:linear-gradient(135deg, #ffffff 0%, #38bdf8 100%);
+    content:''; position:absolute; top:-7px; left:50%; width:13px; height:13px;
+    background:var(--red); border:2px solid var(--ink);
     transform:translateX(-50%) rotate(45deg);
-    border-radius:2px;
-    box-shadow:0 0 12px #38bdf8, 0 2px 6px rgba(0,0,0,.6);
-  }
-  #mjAguja::after{
-    content:''; position:absolute; bottom:-6px; left:50%; width:12px; height:12px;
-    background:linear-gradient(135deg, #38bdf8 0%, #ffffff 100%);
-    transform:translateX(-50%) rotate(45deg);
-    border-radius:2px;
-    box-shadow:0 0 12px #38bdf8, 0 -2px 6px rgba(0,0,0,.6);
   }
   #mjFeedback{
-    text-align:center; font-size:20px; font-weight:800; min-height:28px; margin-top:6px;
-    text-shadow:0 2px 8px rgba(0,0,0,.8);
+    text-align:center; font-size:18px; font-weight:800; min-height:26px; margin-top:6px;
   }
   #mjControles{ display:flex; gap:10px; margin-top:8px; align-items:center; }
-  #btnDescargar{
-    flex:1; min-height:60px; font-size:18px; font-weight:800;
-    box-shadow:0 4px 24px rgba(204,0,0,.5);
-    letter-spacing:.02em;
-  }
-  #mjHint{ font-size:11px; color:var(--muted); font-weight:400; text-shadow:0 1px 4px rgba(0,0,0,.8); }
+  #btnDescargar{ flex:1; min-height:56px; font-size:17px; font-weight:800; }
+  #mjHint{ font-size:11px; color:var(--muted); font-weight:600; margin-top:6px; }
 
   /* ---------- RESULTADOS ---------- */
   #resultados{
     padding:20px; overflow:auto;
-    background:radial-gradient(ellipse 900px 500px at 50% 20%, rgba(204,0,0,.08) 0%, transparent 60%);
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(rgba(16,16,16,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16,16,16,.05) 1px, transparent 1px);
+    background-size:26px 26px;
   }
+  #resultados > *{ max-width:1100px; width:100%; margin-left:auto; margin-right:auto; flex-shrink:0; }
   #resultados .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media(max-width:720px){ #resultados .grid2{ grid-template-columns:1fr; } }
+  @media(max-width:820px){ #resultados .grid2{ grid-template-columns:1fr; } }
+  #resultados hr{ border:none; border-top:2px solid var(--ink); margin:8px 0; }
 
-  .kpi-hero{
-    text-align:center; padding:28px 24px;
-    animation:fadeIn .6s ease-out;
+  .kpi-hero{ text-align:center; padding:24px 20px; }
+  .kpi-hero .estrellas{ font-size:30px; letter-spacing:4px; margin-top:8px; color:var(--gold);
+    animation:starPop .4s ease-out both; }
+
+  /* Bloque de puntaje: caja negra invertida, el ancla visual de la pantalla. */
+  .score-block{
+    background:var(--ink); color:var(--gold-bg);
+    border:var(--bw) solid var(--ink); border-radius:var(--radius-sm);
+    padding:10px 16px; margin:10px 0;
   }
-  .kpi-hero .cierreBig{
-    font-size:48px; font-weight:800;
-    font-family:var(--mono);
-    letter-spacing:.04em;
+  .score-block .lbl{ font-size:11px; font-weight:800; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--paper); }
+  .score-block .val{ font-size:40px; font-weight:800; font-family:var(--mono); line-height:1.1; }
+
+  .nps-badge{
+    display:inline-block; font-weight:800;
+    padding:6px 14px; border-radius:var(--radius-sm);
+    background:var(--paper-2); border:2px solid var(--ink);
+    box-shadow:3px 3px 0 var(--ink);
   }
-  .kpi-hero .estrellas{
-    font-size:30px; letter-spacing:4px; margin-top:8px;
-    animation:starPop .5s ease-out both;
-  }
-  .kpi-hero .nps-badge{
-    display:inline-block; font-size:32px; font-weight:800;
-    padding:6px 20px; border-radius:999px; margin-top:10px;
-    background:rgba(255,255,255,.06); border:1px solid var(--line);
+  .panel-inset{
+    background:var(--paper-3); border:2px solid var(--ink);
+    border-radius:var(--radius-sm); padding:10px; font-size:12px;
   }
 
-  .stack{ display:flex; height:28px; border-radius:var(--radius-sm); overflow:hidden;
-    border:1px solid var(--line); margin:10px 0;
-    background:rgba(255,255,255,.03); }
-  .stack .s{ height:100%; animation:barGrow .8s ease-out both; }
-  .pos{ color:var(--ok); } .neg{ color:var(--bad); } .zero{ color:var(--muted); }
-  .consejo{
-    border-left:3px solid var(--accent); padding-left:16px;
-    background:rgba(204,0,0,.05);
-  }
-  .sub{ font-size:12px; color:var(--muted); }
+  .stack{ display:flex; height:26px; border:2px solid var(--ink); border-radius:var(--radius-sm);
+    overflow:hidden; margin:10px 0; background:var(--paper-3); }
+  .stack .s{ height:100%; animation:barGrow .6s ease-out both; }
+
+  .consejo{ border-left:10px solid var(--red); }
 
   /* ---------- LEADERBOARD ---------- */
-  #leaderboardSection{ margin-top:18px; text-align:left; }
-  .lb-table{ width:100%; border-collapse:collapse; font-size:12px; }
-  .lb-table th,.lb-table td{ border:1px solid var(--line); padding:6px 8px; text-align:center; }
+  #leaderboardSection{ text-align:left; }
+  #leaderboardSection h3{ font-size:15px; margin-bottom:10px; }
+  .lb-scroll{ max-height:min(52vh,420px); overflow:auto; }
+  .lb-table{ width:100%; border-collapse:collapse; font-size:11px; background:var(--paper-2); }
+  .lb-table th,.lb-table td{ border:2px solid var(--ink); padding:5px 6px; text-align:center; }
   .lb-table th{
-    background:rgba(255,255,255,.03); color:var(--muted); font-weight:600; font-size:10px;
+    background:var(--ink); color:var(--paper); font-weight:800; font-size:9px;
     text-transform:uppercase; letter-spacing:.05em;
+    position:sticky; top:0; z-index:1;
   }
-  .lb-table td:first-child{ text-align:center; font-weight:700; }
-  .lb-highlight{ background:rgba(204,0,0,.1) !important; border-color:var(--line-accent) !important; }
-  .lb-empty{ color:var(--muted); font-style:italic; text-align:center; padding:16px; font-size:13px; }
+  .lb-table tbody tr:nth-child(even){ background:var(--paper-3); }
+  .lb-table td:first-child{ text-align:center; font-weight:800; }
+  .lb-highlight{ background:var(--gold-bg) !important; }
+  .lb-empty{
+    color:var(--muted); text-align:center; padding:18px; font-size:13px; font-weight:600;
+    background:var(--paper-3); border:2px dashed var(--ink); border-radius:var(--radius-sm);
+  }
 
-  /* Scrollbar styling */
-  ::-webkit-scrollbar{ width:6px; }
-  ::-webkit-scrollbar-track{ background:transparent; }
-  ::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.1); border-radius:3px; }
-  ::-webkit-scrollbar-thumb:hover{ background:rgba(255,255,255,.2); }
+  /* ---------- SCROLLBAR ---------- */
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:var(--paper-3); }
+  ::-webkit-scrollbar-thumb{ background:var(--ink); border:2px solid var(--paper-3); border-radius:0; }
 </style>
 </head>
 <body>
@@ -429,36 +495,45 @@
 
   <!-- ============ MENU ============ -->
   <div class="screen on" id="menu">
-    <div class="card" style="animation:fadeIn .6s ease-out">
-      <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
-           alt="Coca‑Cola" class="coca-logo"
-           onerror="this.outerHTML='<div style=color:var(--red-400);font-size:28px;font-weight:800;font-style:italic;margin-bottom:10px>Coca‑Cola</div>'">
-      <h1>Stay Time</h1>
-      <div class="subtitle-tag">Simulador de jornada de reparto · Operaciones</div>
-      <div class="obj">
-        <b style="color:var(--txt)">Qué vas a decidir y ejecutar:</b><br>
-        1. Descargar con precisión (el timing cambia cuánto tardas, no cuánto bajas).<br>
-        2. Cerrar la jornada dentro del presupuesto de 8 horas (07:00 → 15:00).<br>
-        3. Mantener la satisfacción del cliente: si te tardas, el NPS baja.<br><br>
-        El Stay Time es costo fijo de estacionamiento + atención al cliente (que la
-        habilidad NO acelera) + descarga variable. ¡Que no se te acabe el tiempo!
-      </div>
-      <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:12px; flex-wrap:wrap">
-        <label class="muted" for="nombreInput">Tu nombre:</label>
-        <input id="nombreInput" class="interactivo" placeholder="Ej: Juan Pérez" maxlength="20">
-      </div>
-      <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:14px; flex-wrap:wrap">
-        <label class="muted" for="selRuta">Ruta:</label>
-        <select id="selRuta" class="interactivo"
-          style="font:inherit; font-weight:600; color:var(--txt); background:var(--bg-surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:8px 12px; min-height:44px"></select>
-      </div>
-      <div class="sub" id="selRutaDesc" style="margin-bottom:14px">&nbsp;</div>
-      <button class="primary interactivo" id="btnEmpezar">Empezar jornada</button>
+    <div class="menu-wrap">
 
-      <div id="leaderboardSection">
-        <h3 style="margin-top:18px; font-size:16px">🏆 Leaderboard</h3>
-        <div id="lbMenu"></div>
+      <!-- Columna izquierda: identidad, objetivos y arranque -->
+      <div class="card menu-main">
+        <div class="brand-row">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
+               alt="Coca‑Cola" class="coca-logo"
+               onerror="this.outerHTML='<div style=color:var(--red);font-size:24px;font-weight:800;font-style:italic>Coca‑Cola</div>'">
+          <h1>Stay<br><em>Time</em></h1>
+        </div>
+        <div class="subtitle-tag">Simulador de jornada de reparto · Operaciones</div>
+
+        <div class="obj">
+          <div class="obj-title">Qué vas a decidir y ejecutar</div>
+          <ol>
+            <li>Descargar con precisión: el timing cambia cuánto tardas, no cuánto bajas.</li>
+            <li>Cerrar la jornada dentro del presupuesto de 8 horas (07:00 → 15:00).</li>
+            <li>Mantener la satisfacción del cliente: si te tardas, el NPS baja.</li>
+          </ol>
+        </div>
+
+        <div class="form-row">
+          <label for="nombreInput">Nombre</label>
+          <input id="nombreInput" class="interactivo" placeholder="Ej: Juan Pérez" maxlength="20">
+        </div>
+        <div class="form-row">
+          <label for="selRuta">Ruta</label>
+          <select id="selRuta" class="interactivo"></select>
+        </div>
+        <div class="sub" id="selRutaDesc" style="margin-bottom:12px">&nbsp;</div>
+        <button class="primary interactivo" id="btnEmpezar">Empezar jornada</button>
       </div>
+
+      <!-- Columna derecha: leaderboard visible sin hacer scroll -->
+      <div class="card" id="leaderboardSection">
+        <h3>🏆 Leaderboard</h3>
+        <div id="lbMenu" class="lb-scroll"></div>
+      </div>
+
     </div>
   </div>
 
@@ -472,9 +547,11 @@
     </div>
     <div class="txt-secondary" style="margin-bottom:12px;font-size:13px">Revisa los datos de la ruta antes de salir. Tienes 8 horas (07:00 → 15:00).</div>
     <div class="infoRuta" id="infoRuta"></div>
-    <div class="card" id="listaParadas" style="margin:0 0 14px;padding:14px"></div>
-    <div class="card" id="infoCamion" style="margin:0 0 14px;padding:14px"></div>
-    <button class="primary interactivo" id="btnIniciarRuta" style="align-self:center;min-width:220px">🚚 Iniciar ruta</button>
+    <div class="card" id="listaParadas" style="margin-bottom:14px"></div>
+    <div class="card" id="infoCamion" style="margin-bottom:14px"></div>
+    <div style="display:flex;justify-content:center;margin-bottom:32px">
+      <button class="primary interactivo" id="btnIniciarRuta" style="min-width:240px">🚚 Iniciar ruta</button>
+    </div>
   </div>
 
   <!-- ============ HUD DURANTE EL JUEGO ============ -->
@@ -485,9 +562,9 @@
           <div id="horaDia">07:00</div>
           <div id="estadoReloj">preparando ruta…</div>
         </div>
-        <div id="hudScoreBadge" style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:700">
-          <span style="color:#f59e0b">🏆 <span id="scoreVal">0</span> pts</span>
-          <span id="comboBadge" style="display:none;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;letter-spacing:.03em">🔥 x1.5</span>
+        <div id="hudScoreBadge">
+          <span>🏆 <span id="scoreVal">0</span> pts</span>
+          <span id="comboBadge">🔥 x1.5</span>
         </div>
       </div>
       <div id="jornadaBar">
@@ -507,7 +584,7 @@
       <div class="kv"><span class="muted">Llegada planeada</span><b id="ppPlanLleg">—</b></div>
       <div class="kv"><span class="muted">Llegada real</span><b id="ppRealLleg">—</b></div>
       <div class="kv"><span class="muted">Atraso acumulado</span><b id="ppAtraso">—</b></div>
-      <hr style="border-color:var(--line);margin:8px 0">
+      <hr>
       <div class="kv"><span class="muted">Stay Time planeado</span><b id="ppStayPlan">—</b></div>
       <div class="kv"><span class="muted">Stay Time real (vivo)</span><b id="ppStayReal">—</b></div>
       <div id="npsVivo"></div>
@@ -738,9 +815,11 @@ function canalDe(i){ return (RUTA.canal && RUTA.canal[i]) || 'tradicional'; }
 function canalLabel(i){ return canalDe(i) === 'moderno' ? 'Canal Moderno' : 'Canal Tradicional'; }
 function canalBadge(i){
   const moderno = canalDe(i) === 'moderno';
-  const bg = moderno ? 'var(--accent)' : 'var(--muted)';
-  return `<span style="display:inline-block;font-size:10px;font-weight:700;color:#fff;`+
-    `background:${bg};border-radius:999px;padding:2px 8px;vertical-align:middle">${canalLabel(i)}</span>`;
+  const bg  = moderno ? 'var(--red)' : 'var(--paper-3)';
+  const fg  = moderno ? '#fff' : 'var(--ink)';
+  return `<span style="display:inline-block;font-size:10px;font-weight:800;color:${fg};`+
+    `background:${bg};border:2px solid var(--ink);border-radius:4px;padding:1px 7px;`+
+    `vertical-align:middle">${canalLabel(i)}</span>`;
 }
 
 /* =====================================================================
@@ -843,9 +922,9 @@ function renderLeaderboard(containerId, highlightNombre){
       const pts = (e.puntos ? e.puntos : Math.round(((e.npsPromedio || 50) + 100) * 250 + 20000)).toLocaleString();
       const npsTxt = e.npsPromedio != null ? formatNps(e.npsPromedio) : '+80';
       return `<tr${hl}><td>${medallas[i]||i+1}</td><td style="text-align:left"><b>${e.nombre}</b></td>` +
-        `<td style="color:#f59e0b;font-weight:700">${pts}</td>` +
+        `<td style="font-weight:800;font-variant-numeric:tabular-nums">${pts}</td>` +
         `<td><b>${npsTxt}</b></td><td>${e.paradasEntregadas}/${e.paradasTotal}</td>` +
-        `<td>$${e.costoTotal}</td><td style="color:#eab308">${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
+        `<td>$${e.costoTotal}</td><td style="color:var(--gold);white-space:nowrap">${'★'.repeat(e.estrellas)}${'☆'.repeat(5-e.estrellas)}</td></tr>`;
     }).join('');
     el.innerHTML = `<table class="lb-table"><thead><tr><th>#</th><th>Nombre</th><th>Puntos</th><th>NPS Global</th><th>Entregas</th><th>Costo</th><th>Estrellas</th></tr></thead><tbody>${filas}</tbody></table>`;
   };
@@ -1154,11 +1233,14 @@ const objMaterials = {
   'rubber':      new THREE.MeshStandardMaterial({ color:0x181818, roughness:0.95, metalness:0.0 }),
 };
 
+// Carpeta de modelos 3D. Todos los .obj viven en assets/models/ (ver README).
+const MODELOS = 'assets/models/';
+
 // Try loading OBJ, fall back to procedural
 let truckLoaded = false;
 const loader = new OBJLoader();
 loader.load(
-  'beverage-delivery-truck.obj',
+  MODELOS + 'beverage-delivery-truck.obj',
   (obj) => {
     // Apply materials based on object/material names
     obj.traverse((child) => {
@@ -1293,7 +1375,7 @@ for (const key in EDIFICIOS) {
   const def = EDIFICIOS[key];
   const mats = MATS_MAP[key];
   loader.load(
-    def.file,
+    MODELOS + def.file,
     (obj) => {
       obj.traverse((child) => {
         if (child.isMesh) {
@@ -1316,8 +1398,23 @@ for (const key in EDIFICIOS) {
   );
 }
 
-// Procedural CEDIS Warehouse
+/* ---- CEDIS: modelo OBJ con fallback procedural ----
+   distribution-center.obj mide 100 (X) x 11.26 (Y) x 54.35 (Z) en unidades de
+   modelo y está apoyado en Y=0. La nave ocupa Z de -27.2 a +7.8; lo que sigue
+   hacia +Z es el patio de maniobras (asfalto, cajones pintados, topes).
+   Escala 0.20 → nave de ~2.0 de alto y ~12.6 de ancho: entra completa en el
+   encuadre ortográfico (a 0.26 se salía por la derecha). El desfase Z deja el
+   frente de los andenes en Z≈-0.4 (detrás del camión, que estaciona en Z=2.4),
+   el patio de maniobras llegando a Z≈3.4 y el fondo de la nave en Z≈-7.4, sin
+   tocar el skyline de Z=-11. */
+const CEDIS_ESCALA = 0.20;
+const CEDIS_POS = [-1.0, 0, -1.2];
+
 const cedisGroup = new THREE.Group();
+scene.add(cedisGroup);
+
+// Fallback procedural: se descarta en cuanto entra el OBJ.
+const cedisFallback = new THREE.Group();
 const cedisMain = new THREE.Mesh(new THREE.BoxGeometry(5.2, 4.2, 4.0),
   new THREE.MeshStandardMaterial({ color: 0x991b1b, roughness: 0.7, metalness: 0.1 }));
 cedisMain.position.set(2.4, 2.1, -1.8);
@@ -1327,8 +1424,44 @@ cedisDoor.position.set(2.4, 1.3, 0.22);
 const cedisAwning = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.25, 1.4),
   new THREE.MeshStandardMaterial({ color: 0xd00000, roughness: 0.4 }));
 cedisAwning.position.set(2.4, 3.2, 0.4);
-cedisGroup.add(cedisMain, cedisDoor, cedisAwning);
-scene.add(cedisGroup);
+cedisFallback.add(cedisMain, cedisDoor, cedisAwning);
+cedisGroup.add(cedisFallback);
+
+// Materiales por nombre del .obj (12 materiales)
+const cedisMaterials = {
+  'asphalt':       new THREE.MeshStandardMaterial({ color:0x2b2529, roughness:0.95 }),
+  'concrete_pad':  new THREE.MeshStandardMaterial({ color:0x4a4348, roughness:0.9 }),
+  'line_paint':    new THREE.MeshStandardMaterial({ color:0xf2ece0, roughness:0.7 }),
+  'precast':       new THREE.MeshStandardMaterial({ color:0x8c848a, roughness:0.85 }),
+  'wall_panel':    new THREE.MeshStandardMaterial({ color:0xdcd5cc, roughness:0.75 }),
+  'roof_deck':     new THREE.MeshStandardMaterial({ color:0x565059, roughness:0.8, metalness:0.2 }),
+  'brand_red':     new THREE.MeshStandardMaterial({ color:0xd00000, roughness:0.35, metalness:0.1 }),
+  'metal_grey':    new THREE.MeshStandardMaterial({ color:0x99a0a8, roughness:0.45, metalness:0.55 }),
+  'dark_trim':     new THREE.MeshStandardMaterial({ color:0x23222a, roughness:0.6, metalness:0.2 }),
+  'rubber':        new THREE.MeshStandardMaterial({ color:0x17171a, roughness:0.95 }),
+  'glazing':       new THREE.MeshStandardMaterial({ color:0x6aa8c8, roughness:0.1, metalness:0.3, transparent:true, opacity:0.6 }),
+  'safety_yellow': new THREE.MeshStandardMaterial({ color:0xf5c518, roughness:0.6 })
+};
+
+loader.load(
+  MODELOS + 'distribution-center.obj',
+  (obj) => {
+    obj.traverse((child) => {
+      if (child.isMesh){
+        const matName = child.material?.name || '';
+        child.material = cedisMaterials[matName] || cedisMaterials['wall_panel'];
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    obj.scale.setScalar(CEDIS_ESCALA);
+    obj.position.set(CEDIS_POS[0], CEDIS_POS[1], CEDIS_POS[2]);
+    cedisGroup.remove(cedisFallback);
+    cedisGroup.add(obj);
+  },
+  undefined,
+  (err) => console.warn('CEDIS OBJ load failed, using procedural fallback:', err.message || err)
+);
 
 // Fallback procedural generic building
 const destinoFallback = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3, 2.4),
@@ -1401,7 +1534,7 @@ let crateTemplate = null;
 let ultimaFraccionPila = 1;
 
 loader.load(
-  'caja-refrescos.obj',
+  MODELOS + 'caja-refrescos.obj',
   (obj) => {
     obj.traverse((child) => {
       if (child.isMesh) {
@@ -1943,31 +2076,33 @@ function resolverManiobra(){
   const pos = G.mj.pos;
   const half = G.mj.green/2;
   const dist = Math.abs(pos - 0.5);
+  // El feedback va sobre el panel claro: se usan los tonos semánticos legibles
+  // (--ok/--warn/--bad), no los rellenos saturados de la barra.
   let tiempo, zona, color, ptsBase, esDiana = false;
 
   if (dist <= half * 0.35){
     tiempo = CONFIG.mj.tVerde;
     zona = '🎯 ¡DIANA PERFECTA!';
-    color = '#4ade80';
+    color = 'var(--ok)';
     ptsBase = CONFIG.puntos.diana;
     esDiana = true;
     G.comboVerde = (G.comboVerde || 0) + 1;
   } else if (dist <= half){
     tiempo = CONFIG.mj.tVerde;
     zona = '✅ ¡VERDE ÓPTIMO!';
-    color = 'var(--verde)';
+    color = 'var(--ok)';
     ptsBase = CONFIG.puntos.verde;
     G.comboVerde = (G.comboVerde || 0) + 1;
   } else if (dist <= half + CONFIG.mj.zonaAmarilla){
     tiempo = CONFIG.mj.tAmarillo;
     zona = '⚠️ Amarillo (+1.2 min)';
-    color = 'var(--amarillo)';
+    color = 'var(--warn)';
     ptsBase = CONFIG.puntos.amarillo;
     G.comboVerde = 0;
   } else {
     tiempo = CONFIG.mj.tRojo;
     zona = '❌ Rojo (+3.0 min)';
-    color = 'var(--rojo)';
+    color = 'var(--bad)';
     ptsBase = CONFIG.puntos.rojo;
     G.comboVerde = 0;
   }
@@ -1995,7 +2130,7 @@ function resolverManiobra(){
   pintarPila(1 - (m+1)/n);
   actualizarNpsVivo(i);
 
-  const comboTxt = mult > 1 ? ` <span style="font-size:14px;color:#f59e0b">(+${ptsGanados} pts · x${mult})</span>` : ` <span style="font-size:14px;color:#f59e0b">(+${ptsGanados} pts)</span>`;
+  const comboTxt = mult > 1 ? ` <span style="font-size:14px;color:var(--gold)">(+${ptsGanados} pts · x${mult})</span>` : ` <span style="font-size:14px;color:var(--gold)">(+${ptsGanados} pts)</span>`;
   $('mjFeedback').innerHTML = `<span style="color:${color}">${zona} · ${tiempo.toFixed(1)} min</span>${comboTxt}`;
 
   setTimeout(()=>{
@@ -2104,43 +2239,43 @@ function estadoResultados(){
   const npsFormatted = formatNps(npsFinal);
 
   $('resultados').innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;animation:fadeIn .5s ease-out">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;animation:fadeIn .4s ease-out">
       <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/Coca-Cola_logo.svg"
            alt="Coca‑Cola" class="coca-logo-sm" onerror="this.style.display='none'">
       <h2 style="margin:0">Cierre de jornada</h2>
     </div>
     ${sim.truncado ? '<div class="toast bad" style="margin-bottom:12px;pointer-events:auto">⏰ <b>No te dio tiempo.</b> ' + sim.paradas.filter(p=>p.noEntregada).length + ' parada(s) quedaron sin entrega (Detractores nota 0/10).</div>' : ''}
     ${sim.tiempoExtra > 0 ? `<div class="toast bad" style="margin-bottom:12px;pointer-events:auto">🚨 <b>Jornada terminada en la ZONA ROJA (+${Math.round(sim.tiempoExtra)} min).</b> Castigo de <b>-${npsGlobal.castigoTiempoExtra} pts de NPS</b> por retraso general de la jornada.</div>` : ''}
-    
+
     <div class="grid2">
       <div class="card kpi-hero card-accent">
         <div class="sub">${G.nombreJugador || 'Jugador'} · ${CONFIG.camion.nombre}</div>
-        
-        <!-- Puntuación Granular Destacada -->
-        <div style="font-size:13px;text-transform:uppercase;color:#f59e0b;font-weight:800;letter-spacing:.08em;margin-top:6px">Puntuación Total</div>
-        <div style="font-size:44px;font-weight:800;color:#f59e0b;font-family:var(--mono);text-shadow:0 0 20px rgba(245,158,11,.3)">
-          ${puntosTotal.toLocaleString()} <span style="font-size:20px">PTS</span>
+
+        <!-- Puntuación granular: bloque negro invertido, ancla visual de la pantalla -->
+        <div class="score-block">
+          <div class="lbl">Puntuación total</div>
+          <div class="val">${puntosTotal.toLocaleString()} <span style="font-size:18px">PTS</span></div>
         </div>
 
-        <div class="estrellas" style="color:#eab308;font-size:28px">${estrellasStr}</div>
-        
-        <div style="display:flex;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap">
-          <div class="nps-badge" style="color:${npsColor};font-size:22px;padding:6px 18px">
+        <div class="estrellas">${estrellasStr}</div>
+
+        <div style="display:flex;justify-content:center;gap:12px;margin-top:12px;flex-wrap:wrap">
+          <div class="nps-badge" style="color:${npsColor};font-size:20px">
             NPS Global: <b>${npsFormatted}</b>
           </div>
-          <div class="nps-badge" style="color:var(--txt);font-size:18px;padding:6px 18px">
+          <div class="nps-badge" style="font-size:18px">
             Cierre: <b>${hhmm(sim.cierre)}</b>
           </div>
         </div>
 
         <!-- Desglose de Clientes Clásico NPS -->
-        <div style="margin-top:12px;padding:10px;background:rgba(0,0,0,.25);border-radius:var(--radius-sm);font-size:12px">
-          <div style="display:flex;justify-content:space-around;gap:8px;font-weight:700">
-            <span style="color:#22c55e">😍 ${npsGlobal.pctProm}% Promotores (${npsGlobal.promotores})</span>
-            <span style="color:#eab308">😊 ${npsGlobal.pctPas}% Pasivos (${npsGlobal.pasivos})</span>
-            <span style="color:#ef4444">🤬 ${npsGlobal.pctDet}% Detractores (${npsGlobal.detractores})</span>
+        <div class="panel-inset" style="margin-top:12px">
+          <div style="display:flex;justify-content:space-around;gap:8px;font-weight:800;flex-wrap:wrap">
+            <span>😍 ${npsGlobal.pctProm}% Promotores (${npsGlobal.promotores})</span>
+            <span>😊 ${npsGlobal.pctPas}% Pasivos (${npsGlobal.pasivos})</span>
+            <span>🤬 ${npsGlobal.pctDet}% Detractores (${npsGlobal.detractores})</span>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">
             Fórmula: % Promotores (${npsGlobal.pctProm}%) − % Detractores (${npsGlobal.pctDet}%) = <b>NPS ${formatNps(npsGlobal.npsBase)}</b>
             ${npsGlobal.castigoTiempoExtra > 0 ? ` − ${npsGlobal.castigoTiempoExtra} pts zona roja = <b>${npsFormatted}</b>` : ''}
           </div>
@@ -2149,24 +2284,27 @@ function estadoResultados(){
         <div class="sub" style="margin-top:8px">Entregas completadas: <b>${entregadas}/${num.length}</b> paradas · Tiempo extra: <b>${Math.round(sim.tiempoExtra)} min</b></div>
       </div>
 
-      <div class="card" style="animation:slideUp .5s ease-out .15s both">
-        <h3 style="font-size:15px;color:#f59e0b">🎯 Desglose de Puntos</h3>
+      <div class="card">
+        <h3 style="font-size:15px">🎯 Desglose de Puntos</h3>
         <div class="kv"><span class="muted">Precisión en Maniobras</span><b>+${(G.puntosManiobras||0).toLocaleString()} pts</b></div>
         <div class="kv"><span class="muted">NPS Global (${npsFormatted})</span><b>+${bonusNps.toLocaleString()} pts</b></div>
         <div class="kv"><span class="muted">Eficiencia Horaria (${Math.round(minutosAhorro)} min de holgura)</span><b>+${bonusTiempo.toLocaleString()} pts</b></div>
         <div class="kv"><span class="muted">Paradas Entregadas (${entregadas})</span><b>+${bonusEntregas.toLocaleString()} pts</b></div>
         ${penalizacionCostos > 0 ? `<div class="kv" style="color:var(--bad)"><span>Penalización por Costo ($${Math.round(costos.total).toLocaleString()})</span><b>-${penalizacionCostos.toLocaleString()} pts</b></div>` : ''}
-        <hr style="border-color:var(--line);margin:8px 0">
-        <div class="kv"><span style="font-weight:700">PUNTAJE FINAL</span><b style="font-size:18px;color:#f59e0b">${puntosTotal.toLocaleString()} PTS</b></div>
+        <hr>
+        <div class="score-block" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+          <span class="lbl">Puntaje final</span>
+          <b style="font-size:22px;font-family:var(--mono)">${puntosTotal.toLocaleString()} PTS</b>
+        </div>
       </div>
     </div>
 
-    <div class="card consejo" style="margin-top:14px;animation:slideUp .5s ease-out .25s both">
+    <div class="card consejo" style="margin-top:14px">
       <h3 style="font-size:15px">💡 Consejo operativo</h3>
       <div style="line-height:1.6">${consejo}</div>
     </div>
 
-    <div class="card" style="margin-top:14px;animation:slideUp .5s ease-out .3s both">
+    <div class="card" style="margin-top:14px">
       <h3>Plan vs realidad — Evaluación por parada</h3>
       <div class="scroll">
       <table>
@@ -2178,27 +2316,27 @@ function estadoResultados(){
     </div>
 
     <div class="grid2" style="margin-top:14px">
-      <div class="card" style="animation:slideUp .5s ease-out .4s both">
+      <div class="card">
         <h3>Desglose del Stay Time</h3>
         ${stackDesglose}
       </div>
-      <div class="card" style="animation:slideUp .5s ease-out .45s both">
+      <div class="card">
         <h3>NO Stay Time</h3>
         ${stackNoStay}
       </div>
     </div>
 
-    <div class="card" style="margin-top:14px;animation:slideUp .5s ease-out .5s both">
+    <div class="card" style="margin-top:14px">
       <h3>Costo total del turno</h3>
       ${renderCostos(costos)}
     </div>
 
-    <div class="card" style="margin-top:14px;animation:slideUp .5s ease-out .55s both">
+    <div class="card" id="leaderboardSection" style="margin-top:14px">
       <h3>🏆 Leaderboard</h3>
-      <div id="lbResultados"></div>
+      <div id="lbResultados" class="lb-scroll"></div>
     </div>
 
-    <div style="display:flex;gap:12px;margin:20px 0 40px">
+    <div style="display:flex;gap:12px;margin:20px 0 40px;flex-wrap:wrap">
       <button class="primary interactivo" id="btnRepetir">Repetir ruta (misma semilla)</button>
       <button class="interactivo" id="btnMenu">Menú</button>
     </div>
@@ -2239,7 +2377,7 @@ function renderCostos(c){
     ['Rechazos de cliente ('+c.rechazos+')', c.cRechazo],
     ['Cajas no entregadas ('+c.cajasPerdidas+')', c.cCajas]
   ].map(([n,v])=>`<div class="kv"><span class="muted">${n}</span><b>$${Math.round(v).toLocaleString()}</b></div>`).join('');
-  return filas + `<hr style="border-color:var(--line);margin:8px 0"><div class="kv"><span><b>COSTO TOTAL DEL TURNO</b></span><b style="font-size:20px;color:${c.sobrecostos>0?'var(--bad)':'var(--ok)'}">$${Math.round(c.total).toLocaleString()}</b></div>`;
+  return filas + `<hr><div class="kv"><span><b>COSTO TOTAL DEL TURNO</b></span><b style="font-size:20px;color:${c.sobrecostos>0?'var(--bad)':'var(--ok)'}">$${Math.round(c.total).toLocaleString()}</b></div>`;
 }
 
 function generarConsejo(sim, agg, costos){
@@ -2269,6 +2407,15 @@ window.addEventListener('keydown', (e)=>{
     if (G.mj) resolverManiobra();
   }
 }, { passive:false });
+
+/* El botón DESCARGAR es la única entrada posible en táctil (no hay teclado).
+   Se escucha 'pointerdown' y no 'click': en un juego de precisión el retardo
+   de click (hasta ~300 ms en móvil) falsearía la posición de la aguja.
+   preventDefault evita que el navegador sintetice además un click. */
+$('btnDescargar').addEventListener('pointerdown', (e)=>{
+  e.preventDefault();
+  if (G.mj) resolverManiobra();
+});
 
 
 

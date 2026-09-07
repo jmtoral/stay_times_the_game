@@ -351,3 +351,143 @@ git reset --hard pre-refactor-jefe
 - PWA con service worker para jugar offline
 - Modo nocturno vs diurno según hora del juego
 - Dashboard de instructor (múltiples jugadores)
+
+---
+
+## 17. Sesión 2026-09-06/07 — Reorganización de archivos, Neobrutalismo y CEDIS 3D
+
+### ✅ 1. Reorganización del repo — COMPLETADO
+
+El repo tenía 6 `.obj` de ~21 MB tirados en la raíz junto a los `.md`. Ahora:
+
+```
+index.html            ← entrada; NO se puede mover (los .obj se resuelven relativos a él)
+serve.js              ← servidor estático local (nuevo)
+README.md
+CLAUDE.md
+assets/models/*.obj   ← los 7 modelos 3D
+docs/                 ← SPEC.md, handoff.md, leaderboard.md
+server/               ← antes cloudflare-worker/
+```
+
+- Los movimientos se hicieron con `git mv`, así que el historial se preserva.
+- En `index.html` se agregó la constante `MODELOS = 'assets/models/'`; los tres
+  `loader.load(...)` la anteponen. **Si mueves la carpeta de modelos, ese es el
+  único punto a tocar.**
+- `.gitignore` sigue excluyendo `.claude/`.
+
+### ✅ 2. Estética neobrutalista (rojo/negro sobre fondo claro) — COMPLETADO
+
+Se reescribió el bloque `<style>` completo. Se eliminó el tema *dark premium*
+con glassmorphism (`backdrop-filter`, glows, degradados).
+
+**Sistema de diseño** (documentado como comentario al inicio del `<style>`):
+
+- Bordes duros negros `var(--bw)` = 3px en toda superficie.
+- Sombra sólida sin blur: `box-shadow: 6px 6px 0 var(--ink)`.
+- Cero degradados, cero blur. Colores planos y saturados.
+- Interacción física: `:hover` desplaza −2px, `:active` hunde +4px y anula la sombra.
+- Tipografía pesada (800), títulos en mayúsculas.
+- Fondo de papel `#f4efe6` con retícula sutil de 26px.
+
+**Tokens nuevos** (los viejos `--bg`, `--panel*`, `--glass-*`, `--red-50..950` ya
+no existen). Se dejaron alias `--txt`, `--line`, `--accent` porque el JS los usa
+en estilos inline:
+
+| Token | Uso |
+|---|---|
+| `--ink` `#101010` | Negro estructural: bordes, texto, sombras |
+| `--paper` `#f4efe6` / `--paper-2` `#fff` / `--paper-3` `#eae2d4` | Fondos |
+| `--red` `#e01b24` | Rojo de marca (botón primario, acentos) |
+| `--gold` / `--gold-bg` | Puntaje y medallas |
+| `--ok` `--warn` `--bad` (+ `-bg`) | Semánticos con contraste sobre claro |
+
+**Cuidado al tocar colores:** los rellenos saturados de la barra del minijuego
+(`--verde`/`--amarillo`/`--rojo`) NO sirven como color de texto sobre papel.
+El feedback de maniobra usa `--ok`/`--warn`/`--bad`, que sí tienen contraste.
+Ese fue el motivo de cambiar `'#4ade80'`, `'var(--amarillo)'`, etc. en
+`resolverManiobra()`.
+
+El HUD del juego también quedó claro: flota sobre la escena 3D (que sigue
+siendo oscura) como paneles de papel con borde negro. Contrasta bien.
+
+### ✅ 3. Menú reordenado — COMPLETADO
+
+- **Se eliminó** la frase *"El Stay Time es costo fijo de estacionamiento +
+  atención al cliente (que la habilidad NO acelera) + descarga variable. ¡Que no
+  se te acabe el tiempo!"* del bloque de objetivos (a petición explícita).
+- Los 3 objetivos pasaron de `<br>` numerados a mano a una `<ol>` con
+  contador CSS y numerador rojo en bloque.
+- **El leaderboard ya no queda bajo el pliegue.** El menú pasó de una tarjeta
+  única de 520px a un grid de 2 columnas (`.menu-wrap`, max 1060px): izquierda
+  identidad + formulario + botón, derecha el leaderboard completo. Bajo 900px
+  colapsa a 1 columna.
+- `.lb-scroll` limita el alto a `min(52vh, 420px)` con `<th>` sticky.
+
+### ✅ 4. CEDIS con modelo 3D — COMPLETADO
+
+Se reemplazaron las 3 cajas procedurales por `distribution-center.obj`
+(9,744 caras, 12 materiales, 2.2 MB).
+
+- Medidas del modelo: **100 (X) × 11.26 (Y) × 54.35 (Z)**, apoyado en Y=0.
+  La nave ocupa Z de −27.2 a +7.8; de ahí hacia +Z es patio de maniobras
+  (asfalto, cajones pintados, topes de hule).
+- **Calibración final: `CEDIS_ESCALA = 0.20`, `CEDIS_POS = [-1.0, 0, -1.2]`.**
+  A 0.26 la nave se salía del encuadre ortográfico por la derecha.
+  Con 0.20 el frente de los andenes queda en Z≈0.4, el patio llega a Z≈4.2
+  (el camión estaciona en Z=2.4, o sea encima del patio: correcto) y el fondo
+  de la nave en Z≈−6.6, sin tocar el skyline de Z=−11.
+- Se conserva `cedisFallback` procedural; se descarta con
+  `cedisGroup.remove(cedisFallback)` en cuanto el OBJ entra.
+- Materiales mapeados por nombre: `asphalt`, `concrete_pad`, `line_paint`,
+  `precast`, `wall_panel`, `roof_deck`, `brand_red`, `metal_grey`, `dark_trim`,
+  `rubber`, `glazing`, `safety_yellow`.
+
+### ✅ 5. BUG ARREGLADO: el botón DESCARGAR no hacía nada
+
+`#btnDescargar` **nunca tuvo handler**. La única forma de resolver una maniobra
+era la barra espaciadora (`window.addEventListener('keydown')`). En táctil
+—donde no hay teclado— el juego era **injugable**: se quedaba clavado en
+"Maniobra 1 de N" para siempre. Se detectó al automatizar una partida completa.
+
+Se escucha `pointerdown` y no `click` a propósito: en un juego de precisión el
+retardo de click (hasta ~300 ms en móvil) falsearía la posición de la aguja.
+`preventDefault()` evita el click sintetizado.
+
+### ✅ 6. `serve.js` y guía del leaderboard — COMPLETADO
+
+- **`serve.js`**: servidor estático en Node (`node serve.js [puerto]`, default
+  8000). Se agregó porque en esta máquina **no hay Python**, y `CLAUDE.md`
+  sólo documentaba `python -m http.server`. Sirve `.obj` como `text/plain`.
+- **`docs/leaderboard.md`**: instructivo completo para montar el marcador —
+  las dos rutas (panel web y Wrangler), la API endpoint por endpoint con
+  ejemplos de `curl`, la tabla del payload, verificación y troubleshooting.
+  Ojo con la trampa documentada: el binding KV **tiene** que llamarse
+  `LEADERBOARD_KV` o el worker cae en silencio al modo memoria y los puntajes
+  "se borran solos".
+
+### Verificación de esta sesión
+
+Partida completa automatizada en Chrome headless (CDP) a 1440×900:
+
+- **Consola del navegador limpia** en las 4 pantallas (sólo el 404 de
+  `favicon.ico`, que no existe en el repo).
+- Los **7 modelos OBJ** responden 200 en `assets/models/`.
+- Máquina de estados recorrida entera: MENU → BRIEFING → CEDIS → TRASLADO →
+  PARADA ×5 → RETORNO → RESULTADOS. Cierre 14:43, 5/5 entregas.
+- `node --check` sobre el `<script type="module">` extraído: sintaxis OK.
+
+### ⚠️ Pendientes / cosas que quedaron abiertas
+
+1. **`_fresh` no resalta la fila propia cuando responde el worker.** En
+   `renderLeaderboard()` el resaltado depende de `e._fresh`, que sólo existe en
+   la entrada local; cuando llega la respuesta del worker se repinta sin ese
+   flag y se pierde el resalte amarillo. Pre-existente, no se tocó.
+2. **Números del leaderboard remoto no cuadran con los de la partida.** En la
+   corrida de prueba la partida cerró con 12,209 pts y en el ranking apareció
+   como 57,500 / NPS 0. Hay que revisar qué está guardando el worker. También
+   pre-existente.
+3. **`CLAUDE.md` menciona números de aceptación de dos camiones** (grande
+   468 min / chico 496 min) pero el juego ya usa un **camión único**. Esos
+   criterios ya no son verificables tal cual.
+4. El logo de Coca-Cola sigue hotlinkeado de Wikimedia (ya anotado en `CLAUDE.md`).

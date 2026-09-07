@@ -13,15 +13,33 @@ dentro de presupuesto, aprendiendo tres cosas:
 ## Jugar
 
 - **En línea (GitHub Pages):** https://jmtoral.github.io/stay_times_the_game/
-- **Local:** abre `index.html` en el navegador, o sirve la carpeta
-  (`python -m http.server`) y entra a `localhost:8000`.
+- **Local:** hace falta servir la carpeta por HTTP — abrir `index.html` con
+  doble clic **no funciona** (los modelos `.obj` se bloquean por CORS).
+
+  ```bash
+  node serve.js        # → http://localhost:8000
+  # o, si tienes Python:
+  python -m http.server 8000
+  ```
+
+## Estructura
+
+```
+index.html            Todo el juego: HTML + CSS + lógica. No lo muevas de la raíz.
+serve.js              Servidor estático para desarrollo local.
+assets/models/        Los 7 modelos 3D .obj (~24 MB).
+docs/                 SPEC.md · handoff.md (bitácora) · leaderboard.md (backend).
+server/               Cloudflare Worker del leaderboard global.
+```
 
 ## Cómo está hecho
 
-- Un único `index.html` autocontenido, sin build step.
+- Sin build step, sin npm, sin bundler: se edita y se recarga.
+- Toda la **lógica** vive en `index.html`; los assets viven fuera.
 - 3D con **Three.js r160** por importmap ES module (CDN, versión fija).
-- Geometría 100% procedural, cámara isométrica fija, < 5000 triángulos.
-- HUD en HTML/CSS plano. RNG con semilla (mulberry32) para demos reproducibles.
+- Modelos OBJ con fallback procedural, cámara isométrica fija.
+- HUD en HTML/CSS plano, estética neobrutalista (rojo/negro sobre fondo claro).
+- RNG con semilla (mulberry32) para demos reproducibles.
 
 ## Recalibrar
 
@@ -33,6 +51,10 @@ Todo lo tuneable vive en el objeto `CONFIG` al inicio del script:
   verde/amarillo/rojo).
 - **Costos y estrellas:** `CONFIG.costos` y `CONFIG.estrellas`.
 
-La ruta **Estándar (demo)** usa semilla fija y produce los números de referencia:
-camión grande perfecto **468 min / 14:48**, camión chico perfecto **496 min / 15:16**
-(+16 extra), plan del planeador **465 min / 14:45**.
+La ruta **Estándar (demo)** usa semilla fija, así que es reproducible entre
+partidas.
+
+## Leaderboard
+
+Sin configurar nada, cada jugador ve su propio Top 10 en `localStorage`. Para el
+ranking global compartido, sigue [`docs/leaderboard.md`](docs/leaderboard.md).
